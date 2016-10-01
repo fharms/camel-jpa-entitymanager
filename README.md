@@ -7,4 +7,4 @@ More to come....
 Build Status
 ---------------
 
-[![Build Status](https://travis-ci.org/fharms/camel-jpa-entitymanager.svg?branch=master)](https://travis-ci.org/fharms/java-examples)
+[![Build Status](https://travis-ci.org/fharms/camel-jpa-entitymanager.svg?branch=master)](https://travis-ci.org/fharms/camel-jpa-entitymanager)
