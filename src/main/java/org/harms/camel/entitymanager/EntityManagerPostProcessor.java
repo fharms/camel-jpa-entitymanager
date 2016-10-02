@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2016 Flemming Harms
+ * Copyright © 2016 Flemming Harms
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,9 +22,9 @@
  */
 package org.harms.camel.entitymanager;
 
-import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.jpa.JpaComponent;
+import org.apache.camel.model.ModelCamelContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +56,12 @@ import java.util.List;
 @Component
 public class EntityManagerPostProcessor implements BeanPostProcessor {
 
-    ThreadLocal<HashMap<String, EntityManager>> entityManagerMapLocal = new ThreadLocal<>();
+    private ThreadLocal<HashMap<String, EntityManager>> entityManagerMapLocal = new ThreadLocal<HashMap<String, EntityManager>>() {
+        @Override
+        protected HashMap<String, EntityManager> initialValue() {
+            return new HashMap<>();
+        }
+    };
 
     @Autowired
     private ApplicationContext context;
@@ -101,26 +106,33 @@ public class EntityManagerPostProcessor implements BeanPostProcessor {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T getCamelEntityManagerProxy(Class<T> interfaceClass, final String jpaComponentName) {
+    private <T> T getCamelEntityManagerProxy(Class<T> interfaceClass, final String jpaComponentName) {
 
         InvocationHandler handler = new InvocationHandler() {
 
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                EntityManager em = getEntityManager(jpaComponentName);
 
+                switch (method.getName()) {
+                    case "equals":
+                        return (proxy == args[0]);
+                    case "getEntityManagerFactory":
+                        return getEntityManagerFactory(jpaComponentName);
+                    case "hashCode":
+                        return hashCode();
+                    case "toString":
+                        return "Camel EntityManager proxy [" + getEntityManagerFactory(jpaComponentName) + "]";
+                }
+
+                EntityManager em = getEntityManager(jpaComponentName);
                 if (em == null) {
-                    em = getCamelEntityManager(jpaComponentName, args);
+                    em = createCamelEntityManager(jpaComponentName, args);
 
                     if (em == null) {
                         throw new RuntimeException("Unable to instantiate EntityManager");
                     }
 
-                    HashMap<String, EntityManager> emMap = new HashMap<>();
+                    HashMap<String, EntityManager> emMap = entityManagerMapLocal.get();
                     emMap.put(jpaComponentName, em);
-
-                    if (entityManagerMapLocal.get() == null) {
-                        entityManagerMapLocal.set(emMap);
-                    }
                 }
 
                 em.joinTransaction();
@@ -139,18 +151,22 @@ public class EntityManagerPostProcessor implements BeanPostProcessor {
      * @param args - Call parameters
      * @return a new {@link EntityManager}
      */
-    private EntityManager getCamelEntityManager(String jpaComponentName, Object[] args) {
+    private EntityManager createCamelEntityManager(String jpaComponentName, Object[] args) {
 
         TransactionSynchronizationManager.registerSynchronization(new SessionCloseSynchronizationManager(jpaComponentName));
-
-        for (Object arg : args) {
-            if (arg instanceof Exchange) {
-                Exchange exchange = (Exchange) arg;
-                //Let's check if there is already an Entity manager register
-                EntityManager em = exchange.getProperty("CamelEntityManager", EntityManager.class);
-                //we return early because the entity manager is own by calling route
-                if (em != null) {
-                    return em;
+        //This is not working as it now, because the parameter arguments is not the callers
+        //but the parameters from the specific EntityManager method called.
+        //TODO : Need to find a solution to how to use the CamelEntityManager header if possible
+        if (args != null) {
+            for (Object arg : args) {
+                if (arg instanceof Exchange) {
+                    Exchange exchange = (Exchange) arg;
+                    //Let's check if there is already an Entity manager register
+                    EntityManager em = exchange.getIn().getHeader("CamelEntityManager", EntityManager.class);
+                    //we return early because the entity manager is own by calling route
+                    if (em != null) {
+                        return em;
+                    }
                 }
             }
         }
@@ -164,12 +180,11 @@ public class EntityManagerPostProcessor implements BeanPostProcessor {
     }
 
     /**
-     * @param jpaComponentName
+     * @param jpaComponentName - The name of the jpa component to lookup
      * @return return the {@link EntityManagerFactory} bind to the specified jpa component
      */
     private EntityManagerFactory getEntityManagerFactory(String jpaComponentName) {
-        CamelContext camelContext = context.getBean(CamelContext.class);
-
+        ModelCamelContext camelContext = context.getBean(ModelCamelContext.class);
         if (camelContext == null) {
             throw new IllegalStateException("No camel context registered");
         }
@@ -188,7 +203,6 @@ public class EntityManagerPostProcessor implements BeanPostProcessor {
      * a list of annotated fields
      * @param bean - Name of the bean to scan for annotation
      * @return - List of fields annotated with {@link CamelEntityManager}
-     * @throws IllegalAccessException
      */
     private List<Field> getAnnotatedFields(Object bean) throws IllegalAccessException {
         List<Field> annotatedFields = new ArrayList<>();
@@ -215,10 +229,7 @@ public class EntityManagerPostProcessor implements BeanPostProcessor {
     }
 
     private EntityManager getEntityManager(String jpaComponentName) {
-        if (entityManagerMapLocal.get() != null) {
-            return entityManagerMapLocal.get().get(jpaComponentName);
-        }
-        return null;
+        return entityManagerMapLocal.get().get(jpaComponentName);
     }
 
     /**

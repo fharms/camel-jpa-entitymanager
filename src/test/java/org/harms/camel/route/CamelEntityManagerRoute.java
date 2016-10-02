@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2016 Flemming Harms
+ * Copyright © 2016 Flemming Harms
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +23,7 @@
 package org.harms.camel.route;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jpa.JpaComponent;
 import org.apache.camel.spring.javaconfig.CamelConfiguration;
@@ -30,33 +31,37 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-
-import javax.persistence.EntityManagerFactory;
 
 @Component
 class CamelEntityManagerRoute extends RouteBuilder {
 
-    static final String DIRECT_PERSIST = "direct:persist";
-    static final String DIRECT_FIND = "direct:find";
-    static final String DIRECT_TRASH = "direct:trash";
-    static final String DIRECT_FIND_TRASH = "direct:find_trash";
-    static final String DIRECT_PERSIST_ID = "persist";
-    static final String DIRECT_FIND_ID = "find";
-
     public void configure() throws Exception {
-        from(DIRECT_PERSIST)
-                .routeId(DIRECT_PERSIST_ID)
+        from(CamelEntityManagerRoutes.DIRECT_PERSIST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_PERSIST.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "persistDog")
-                .to(DIRECT_TRASH);
+                .to(CamelEntityManagerRoutes.END_OF_LINE1.uri());
 
-        from(DIRECT_FIND)
-                .routeId(DIRECT_FIND_ID)
+        from(CamelEntityManagerRoutes.DIRECT_FIND.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_FIND.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "findDog")
-                .to(DIRECT_FIND_TRASH);
+                .to(CamelEntityManagerRoutes.END_OF_LINE2.uri());
+
+    /*    from(CamelEntityManagerRoutes.DIRECT_JPA.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_JPA.id())
+                .transacted()
+                .bean(CamelEntityManagerTestBean.class, "findAnotherDog");
+*/
+        from(CamelEntityManagerRoutes.END_OF_LINE1.uri())
+                .routeId(CamelEntityManagerRoutes.END_OF_LINE1.id()).log(LoggingLevel.INFO,"End of line!!");
+
+        from(CamelEntityManagerRoutes.END_OF_LINE2.uri())
+                .routeId(CamelEntityManagerRoutes.END_OF_LINE2.id()).log(LoggingLevel.INFO,"End of line!!");
+
+
     }
+    
 
 
     /**
@@ -67,16 +72,10 @@ class CamelEntityManagerRoute extends RouteBuilder {
     public static class CamelContextConfiguration extends CamelConfiguration {
 
         @Autowired
-        EntityManagerFactory emf;
-
-        @Autowired
-        PlatformTransactionManager tx;
+        JpaComponent jpaComponent;
 
         @Override
         protected void setupCamelContext(CamelContext camelContext) throws Exception {
-            JpaComponent jpaComponent = new JpaComponent();
-            jpaComponent.setEntityManagerFactory(emf);
-            jpaComponent.setTransactionManager(tx);
             camelContext.addComponent("jpa", jpaComponent);
         }
 

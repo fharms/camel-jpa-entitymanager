@@ -22,38 +22,30 @@
  */
 package org.harms.camel.route;
 
-import org.apache.camel.Body;
-import org.apache.camel.Exchange;
-import org.harms.camel.entity.Dog;
-import org.harms.camel.entitymanager.CamelEntityManager;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import java.util.List;
-
 /**
- * Test bean for testing injection of {@link EntityManager}
+ * All defined routes with URI and Id
  */
-@Transactional(value = "transactionManager")
-public class CamelEntityManagerTestBean {
+public enum CamelEntityManagerRoutes {
 
-    @CamelEntityManager
-    private EntityManager em;
+    DIRECT_PERSIST ("direct:persist","directPersist"),
+    END_OF_LINE1("direct:endofline1","endOfLine1"),
+    END_OF_LINE2("direct:endofline2","endOfLine2"),
+    DIRECT_JPA ("jpa:org.harms.camel.entity.Dog?consumeDelete=false","directJpa"),
+    DIRECT_FIND("direct:find","directFind");
 
-    public Dog persistDog(@Body Dog dogEntity){
-        em.persist(dogEntity);
-        return dogEntity;
+    private final String routeUri;
+    private final String routeId;
+
+    CamelEntityManagerRoutes(String routeUri, String routeId) {
+        this.routeUri = routeUri;
+        this.routeId = routeId;
     }
 
-    public Dog findDog(@Body Long id){
-        Dog dog = em.find(Dog.class, id);
-        return dog;
+    public String uri() {
+        return routeUri;
     }
 
-    public List<Dog> findAnotherDog(Exchange exchange) {
-        final TypedQuery<Dog> dogQuery = em.createQuery("select d from Dog d where race = 'Terrier'", Dog.class);
-        return dogQuery.getResultList();
-
+    public String id() {
+        return routeId;
     }
 }

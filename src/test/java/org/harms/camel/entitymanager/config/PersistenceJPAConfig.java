@@ -1,6 +1,6 @@
 /**
  * The MIT License
- * Copyright (c) 2016 Flemming Harms
+ * Copyright © 2016 Flemming Harms
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
  */
 package org.harms.camel.entitymanager.config;
 
+import org.apache.camel.component.jpa.JpaComponent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
@@ -68,12 +69,21 @@ public class PersistenceJPAConfig{
         return new PersistenceExceptionTranslationPostProcessor();
     }
 
+    @Bean
+    public JpaComponent jpaCompoment(EntityManagerFactory emf, PlatformTransactionManager tx){
+        JpaComponent jpaComponent = new JpaComponent();
+        jpaComponent.setEntityManagerFactory(emf);
+        jpaComponent.setTransactionManager(tx);
+        return jpaComponent;
+    }
+
+
     private Properties additionalProperties() {
         Properties properties = new Properties();
         properties.setProperty("hibernate.archive.autodetection" ,"class");
         properties.setProperty("hibernate.dialect" ,"org.hibernate.dialect.H2Dialect");
         properties.setProperty("hibernate.connection.driver_class" ,"org.h2.Driver");
-        properties.setProperty("hibernate.connection.url" ,"jdbc:h2:mem:test");
+        properties.setProperty("hibernate.connection.url" ,"jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE");
         properties.setProperty("hibernate.connection.user" ,"sa");
         properties.setProperty("hibernate.show_sql" ,"false");
         properties.setProperty("hibernate.id.new_generator_mappings", "true");
