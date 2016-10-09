@@ -140,7 +140,6 @@
             <artifactId>cglib</artifactId>
             <version>3.2.0</version>
         </dependency>
-
         <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-core</artifactId>
