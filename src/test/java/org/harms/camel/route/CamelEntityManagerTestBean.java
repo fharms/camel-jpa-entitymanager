@@ -26,11 +26,10 @@ import org.apache.camel.Body;
 import org.apache.camel.Exchange;
 import org.harms.camel.entity.Dog;
 import org.harms.camel.entitymanager.CamelEntityManager;
+import org.harms.camel.entitymanager.CamelEntityManagerHandler;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import java.util.List;
 
 /**
  * Test bean for testing injection of {@link EntityManager}
@@ -51,9 +50,10 @@ public class CamelEntityManagerTestBean {
         return dog;
     }
 
-    public List<Dog> findAnotherDog(Exchange exchange) {
-        final TypedQuery<Dog> dogQuery = em.createQuery("select d from Dog d where race = 'Terrier'", Dog.class);
-        return dogQuery.getResultList();
-
+    public void findAnotherDog(Exchange exchange) {
+        Object localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        if (!em.equals(localEm)) {
+            throw new RuntimeException("This is not good!");
+        }
     }
 }

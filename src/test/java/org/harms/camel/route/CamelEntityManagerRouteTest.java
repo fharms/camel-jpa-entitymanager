@@ -59,6 +59,9 @@ public class CamelEntityManagerRouteTest {
     @EndpointInject(uri = "direct:find")
     private ProducerTemplate producerFind;
 
+    @EndpointInject(uri = "direct:manuelPolling")
+    private ProducerTemplate manuelPolling;
+
     @EndpointInject(uri = "mock:persistResult")
     private MockEndpoint resultPersistEndpoint;
 
@@ -68,18 +71,21 @@ public class CamelEntityManagerRouteTest {
     @BeanInject
     private JpaComponent jpaComponent;
 
+    private Dog alphaDoc;
+
     @Before
     public void setupDatabaseData() {
         EntityManager em = jpaComponent.getEntityManagerFactory().createEntityManager();
         em.getTransaction().begin();
-        em.persist(createDog("Skippy","Terrier"));
+        alphaDoc = createDog("Skippy", "Terrier");
+        em.persist(alphaDoc);
         em.flush();
         em.getTransaction().commit();
     }
 
     @Before
     public void adviceWith() throws Exception {
-        ModelCamelContext context = (ModelCamelContext) producerPersist.getCamelContext();
+        final ModelCamelContext context = (ModelCamelContext) producerPersist.getCamelContext();
         context.getRouteDefinition(CamelEntityManagerRoutes.DIRECT_PERSIST.id()).adviceWith(context, new AdviceWithRouteBuilder() {
             @Override
             public void configure() throws Exception {
@@ -93,6 +99,15 @@ public class CamelEntityManagerRouteTest {
             @Override
             public void configure() throws Exception {
                 interceptSendToEndpoint(CamelEntityManagerRoutes.END_OF_LINE2.uri())
+                    .to(resultFindEndpoint.getEndpointUri());
+
+            }
+        });
+
+        context.getRouteDefinition(CamelEntityManagerRoutes.MANUEL_POLL_JPA.id()).adviceWith(context, new AdviceWithRouteBuilder() {
+            @Override
+            public void configure() throws Exception {
+                interceptSendToEndpoint(CamelEntityManagerRoutes.END_OF_LINE3.uri())
                         .to(resultFindEndpoint.getEndpointUri());
 
             }
@@ -102,23 +117,38 @@ public class CamelEntityManagerRouteTest {
 
     @Test
     public void testEntityManagerInject() throws Exception {
-
+        resultPersistEndpoint.reset();
         resultPersistEndpoint.setExpectedCount(1);
 
         Dog dog = createDog("Fiddo","Beagle");
 
         producerPersist.sendBody(dog);
+
         resultPersistEndpoint.assertIsSatisfied();
         Exchange exchange = resultPersistEndpoint.getReceivedExchanges().get(0);
         Dog dog2 = exchange.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
 
+        resultFindEndpoint.reset();
         resultFindEndpoint.setExpectedCount(1);
         producerFind.sendBody(new Long(dog2.getId()));
         resultFindEndpoint.assertIsSatisfied();
+
         exchange = resultFindEndpoint.getReceivedExchanges().get(0);
         dog2 = exchange.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
+
+    }
+
+    @Test
+    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
+        Dog boldDog = createDog("Bold", "Terrier");
+        resultFindEndpoint.setExpectedCount(1);
+        manuelPolling.sendBody(boldDog);
+        resultFindEndpoint.assertIsSatisfied();
+        Exchange exchange = resultFindEndpoint.getReceivedExchanges().get(0);
+        Dog dog = exchange.getIn().getBody(Dog.class);
+        Assert.assertEquals(boldDog,dog);
 
     }
 

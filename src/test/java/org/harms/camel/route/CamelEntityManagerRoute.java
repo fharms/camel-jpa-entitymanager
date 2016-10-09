@@ -48,21 +48,24 @@ class CamelEntityManagerRoute extends RouteBuilder {
                 .bean(CamelEntityManagerTestBean.class, "findDog")
                 .to(CamelEntityManagerRoutes.END_OF_LINE2.uri());
 
-    /*    from(CamelEntityManagerRoutes.DIRECT_JPA.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_JPA.id())
+       from(CamelEntityManagerRoutes.MANUEL_POLL_JPA.uri())
+                .routeId(CamelEntityManagerRoutes.MANUEL_POLL_JPA.id())
+                .enrich(CamelEntityManagerRoutes.DIRECT_JPA.uri())
                 .transacted()
-                .bean(CamelEntityManagerTestBean.class, "findAnotherDog");
-*/
+                .bean(CamelEntityManagerTestBean.class, "findAnotherDog")
+                .to(CamelEntityManagerRoutes.END_OF_LINE3.uri());
+
         from(CamelEntityManagerRoutes.END_OF_LINE1.uri())
                 .routeId(CamelEntityManagerRoutes.END_OF_LINE1.id()).log(LoggingLevel.INFO,"End of line!!");
 
         from(CamelEntityManagerRoutes.END_OF_LINE2.uri())
                 .routeId(CamelEntityManagerRoutes.END_OF_LINE2.id()).log(LoggingLevel.INFO,"End of line!!");
 
+        from(CamelEntityManagerRoutes.END_OF_LINE3.uri())
+                .routeId(CamelEntityManagerRoutes.END_OF_LINE3.id()).log(LoggingLevel.INFO,"End of line!!");
+
 
     }
-    
-
 
     /**
      * Created by fharms on 24/09/16.

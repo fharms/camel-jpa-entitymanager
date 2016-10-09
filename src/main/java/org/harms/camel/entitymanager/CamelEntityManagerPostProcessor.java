@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,43 +22,41 @@
  */
 package org.harms.camel.entitymanager;
 
-import javax.interceptor.InterceptorBinding;
-import javax.persistence.EntityManager;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.stereotype.Component;
 
-import static java.lang.annotation.ElementType.FIELD;
+import javax.persistence.EntityManager;
+
 
 /**
- * Inject the {@link EntityManager} into the annotated field, the field type should
- * be {@link EntityManager} otherwise it will throw an {@link IllegalStateException}.
+ * Post processor for injecting fields with camel entity manager proxy when
+ * annotated with the {@link CamelEntityManager}
  * <p>
- * Multiple fields can be annotated with the different {@link org.apache.camel.component.jpa.JpaComponent}
- * specified.
+ * The requirement for annotated field is it a type of {@link EntityManager} otherwise it
+ * will throw an {@link IllegalStateException}.
  * </p>
- * <p>
- * If Camel has created a {@link EntityManager} this will be injected in to the field instead.
- * This can be overwritten by adding the field ignoreCamelEntityManager=true and new entity manager
- * will be created instead
- * </p>
- * <pre>
- * {@code
- *
- *@literal @CamelEntityManager(jpaComponent="jpa1")
- * EntityManager em1;
- *
- *@literal @CamelEntityManager(jpaComponent="jpa2", ignoreCamelEntityManager=true)
- * EntityManager em2;
- * }
- * </pre>
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({FIELD})
-@InterceptorBinding
-public @interface CamelEntityManager {
+@Component
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+public class CamelEntityManagerPostProcessor implements BeanPostProcessor {
 
-    String jpaComponent() default "jpa";
+    @Autowired
+    private CamelEntityManagerHandler handler;
 
-    boolean ignoreCamelEntityManager() default false;
+
+    @Override
+    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+         return handler.registerProxyHandler(bean);
+    }
+
+    @Override
+    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+        return bean;
+    }
+
+
+
 }
