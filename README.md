@@ -23,7 +23,10 @@ Working with multiple JPA components in camel
 ```java
 
   @org.harms.camel.entitymanager.CamelEntityManager(jpaComponent="jpa1")
-  EntityManager em;
+  EntityManager em1;
+  
+  @org.harms.camel.entitymanager.CamelEntityManager(jpaComponent="jpa2")
+  EntityManager em2;
 ```
 
 Ignoring the Camel entity manager and inject a new entity manager
