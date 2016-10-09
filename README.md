@@ -2,12 +2,12 @@
 
 Camel comes with a [JPA module](http://camel.apache.org/jpa.html) for using JPA within a route, 
 by simply using the URI format "jpa:entityClassName[?options]". This make it real easy to make CRUD operation with Camel. 
-But accessing the entity manager and join it with  transaction started by camel it little more tricky, and require 
+But accessing the entity manager and join it with with current route transaction is a little more tricky, and require 
 some manual work.
 
 The CamelEntityManager is a annotation that serves the purpose, to inject a EntityManager into a bean
 and join the current transaction started by Camel. It support both use cases where the Camel has created
-the EntityManager as part of the JPA consumer or producer, or for none JPA consumer or producer.
+the EntityManager as part of the JPA consumers or producers, or for none JPA consumers or producers.
 
 # User guide
 
