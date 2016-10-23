@@ -161,7 +161,7 @@ public class CamelEntityManagerHandler {
                 EntityManager em = getEntityManager(jpaComponent.jpaComponent(), jpaComponent.ignoreCamelEntityManager());
                 switch (method.getName()) {
                     case "hashCode":
-                        return hashCode();
+                        return em.hashCode();
                     case "equals":
                         return (em == args[0]);
                     case "getEntityManagerFactory":

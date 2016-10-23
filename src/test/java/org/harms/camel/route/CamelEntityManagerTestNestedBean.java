@@ -23,17 +23,34 @@
 package org.harms.camel.route;
 
 import org.harms.camel.entity.Dog;
+import org.harms.camel.entitymanager.CamelEntityManager;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 
 /**
- * Created by fharms on 10/10/16.
+ * Test bean for testing injection of {@link EntityManager}
  */
-public class BeanWithNoAnnotation {
+@Component
+@Transactional(value = "transactionManager")
+public class CamelEntityManagerTestNestedBean {
 
+    @CamelEntityManager
     private EntityManager em;
 
-    public void findDog(){
-        em.find(Dog.class,new Long(1));
+    public Dog persistDog(EntityManager parentEm){
+        if (parentEm.hashCode() != em.hashCode()) {
+            throw new RuntimeException("This is not good!");
+        }
+
+        Dog dog = new Dog();
+        dog.setPetName("Joe");
+        dog.setRace("German Shepherd");
+
+        em.persist(dog);
+        return dog;
     }
+
+
 }

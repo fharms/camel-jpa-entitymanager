@@ -31,7 +31,9 @@ public enum CamelEntityManagerRoutes {
     MANUEL_POLL_JPA ("direct:manuelPolling","manuelPolling"),
     DIRECT_JPA ("jpa:org.harms.camel.entity.Dog","directJpa"),
     DIRECT_FIND("direct:find","directFind"),
-    DIRECT_JPA_MANAGER2("direct:findEntityManager2", "directEntityManager2");
+    DIRECT_JPA_MANAGER2("direct:findEntityManager2", "directEntityManager2"),
+    DIRECT_COMPARE_HASHCODE("direct:compareHashCode", "compareHashCode"),
+    DIRECT_NESTED_BEAN("direct:nestedBean", "nestedBean");
 
     private final String routeUri;
     private final String routeId;

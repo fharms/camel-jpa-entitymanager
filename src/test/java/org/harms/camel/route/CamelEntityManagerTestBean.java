@@ -23,19 +23,24 @@
 package org.harms.camel.route;
 
 import org.apache.camel.Body;
+import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.component.jpa.JpaComponent;
 import org.harms.camel.entity.Dog;
 import org.harms.camel.entitymanager.CamelEntityManager;
 import org.harms.camel.entitymanager.CamelEntityManagerHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.TypedQuery;
-import java.util.List;
 
 /**
  * Test bean for testing injection of {@link EntityManager}
  */
+@Component
 @Transactional(value = "transactionManager")
 public class CamelEntityManagerTestBean {
 
@@ -44,6 +49,9 @@ public class CamelEntityManagerTestBean {
 
     @CamelEntityManager(jpaComponent = "jpa2", ignoreCamelEntityManager = true)
     private EntityManager em2;
+    
+    @Autowired
+    CamelEntityManagerTestNestedBean nBean;
 
     public Dog persistDog(@Body Dog dogEntity){
         em.persist(dogEntity);
@@ -63,9 +71,23 @@ public class CamelEntityManagerTestBean {
     }
 
     public void findAllDogs(Exchange exchange) {
-        List<Dog> resultList = em.createQuery("select d from Dog d", Dog.class).getResultList();
         TypedQuery<Dog> dogQuery = em2.createQuery("select d from Dog d",Dog.class);
         exchange.getIn().setBody(dogQuery.getResultList());
+    }
+
+    public Integer compareHashCode(Exchange exchange) {
+        CamelContext context = exchange.getContext();
+        EntityManagerFactory currentEm = em.getEntityManagerFactory();
+        if (currentEm.hashCode() != context.getComponent("jpa",JpaComponent.class).getEntityManagerFactory().hashCode()) {
+            throw new RuntimeException("This is not good!");
+        }
+        return new Integer(currentEm.hashCode());
+    }
+    
+    public Dog persistWithNedstedCall(@Body Dog body){
+        em.persist(body);
+        return nBean.persistDog(em);
+
     }
 
 }
