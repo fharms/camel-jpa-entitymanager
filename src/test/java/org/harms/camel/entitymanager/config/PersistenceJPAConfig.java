@@ -23,6 +23,7 @@
 package org.harms.camel.entitymanager.config;
 
 import org.apache.camel.component.jpa.JpaComponent;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor;
@@ -42,10 +43,22 @@ import java.util.Properties;
  */
 @Configuration
 @EnableTransactionManagement
-public class PersistenceJPAConfig{
+public class PersistenceJPAConfig {
 
     @Bean(name = "emf")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+        LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
+        em.setPackagesToScan("org.harms.camel.jpa.entitymanager");
+
+        JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
+        em.setJpaVendorAdapter(vendorAdapter);
+        em.setJpaProperties(additionalProperties());
+
+        return em;
+    }
+
+    @Bean(name = "emf2")
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory2() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setPackagesToScan("org.harms.camel.jpa.entitymanager");
 
@@ -68,8 +81,16 @@ public class PersistenceJPAConfig{
         return new PersistenceExceptionTranslationPostProcessor();
     }
 
-    @Bean
-    public JpaComponent jpaCompoment(EntityManagerFactory emf, PlatformTransactionManager tx){
+    @Bean(name = "jpa")
+    public JpaComponent jpaCompoment(@Qualifier("emf") EntityManagerFactory emf, PlatformTransactionManager tx){
+        JpaComponent jpaComponent = new JpaComponent();
+        jpaComponent.setEntityManagerFactory(emf);
+        jpaComponent.setTransactionManager(tx);
+        return jpaComponent;
+    }
+
+    @Bean(name = "jpa2")
+    public JpaComponent jpaCompoment2(@Qualifier("emf2") EntityManagerFactory emf, PlatformTransactionManager tx){
         JpaComponent jpaComponent = new JpaComponent();
         jpaComponent.setEntityManagerFactory(emf);
         jpaComponent.setTransactionManager(tx);

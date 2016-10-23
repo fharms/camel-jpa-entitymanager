@@ -86,7 +86,7 @@ public class CamelEntityManagerHandler {
         try {
             annotatedFields = getAnnotatedFields(bean);
         } catch (IllegalAccessException e) {
-            throw new BeanCreationException("Wrong bean");
+            throw new BeanCreationException("Failed to scan for for @CamelEntityManager",e);
         }
 
         if (annotatedFields.size() > 0) {
@@ -120,10 +120,10 @@ public class CamelEntityManagerHandler {
             public Object invoke(MethodInvocation invocation) throws Throwable {
                 Method method = invocation.getMethod();
                 switch (method.getName()) {
-                    case "equals":
-                        return (invocation.getThis() == invocation.getArguments()[0]);
                     case "hashCode":
                         return hashCode();
+                    case "equals":
+                        return (invocation.getThis() == invocation.getArguments()[0]);
                     case "toString":
                         return toString();
                 }
@@ -160,12 +160,12 @@ public class CamelEntityManagerHandler {
 
                 EntityManager em = getEntityManager(jpaComponent.jpaComponent(), jpaComponent.ignoreCamelEntityManager());
                 switch (method.getName()) {
+                    case "hashCode":
+                        return hashCode();
                     case "equals":
                         return (em == args[0]);
                     case "getEntityManagerFactory":
                         return getEntityManagerFactory(jpaComponent.jpaComponent());
-                    case "hashCode":
-                        return hashCode();
                     case "toString":
                         return "Camel EntityManager proxy [" + getEntityManagerFactory(jpaComponent.jpaComponent()) + "]";
                 }
@@ -304,7 +304,6 @@ public class CamelEntityManagerHandler {
         public void afterCompletion(int status) {
             EntityManager em = getEntityManager(jpaComponentName, ignoreCamelEntityManager);
             if (em != null && em.isOpen() && !CAMEL_ENTITY_MANAGER.equals(jpaComponentName)) {
-                em.clear();
                 em.close();
             }
             entityManagerMapLocal.get().remove(jpaComponentName);

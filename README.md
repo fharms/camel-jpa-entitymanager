@@ -38,7 +38,7 @@ Ignoring the Camel entity manager and inject a new entity manager
  
 # Build the source
  
-This is really easy, just execute the command : 
+This is real easy, just execute the command : 
 
 > mvn install 
 

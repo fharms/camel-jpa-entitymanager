@@ -30,6 +30,8 @@ import org.harms.camel.entitymanager.CamelEntityManagerHandler;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.TypedQuery;
+import java.util.List;
 
 /**
  * Test bean for testing injection of {@link EntityManager}
@@ -39,6 +41,9 @@ public class CamelEntityManagerTestBean {
 
     @CamelEntityManager
     private EntityManager em;
+
+    @CamelEntityManager(jpaComponent = "jpa2", ignoreCamelEntityManager = true)
+    private EntityManager em2;
 
     public Dog persistDog(@Body Dog dogEntity){
         em.persist(dogEntity);
@@ -56,4 +61,11 @@ public class CamelEntityManagerTestBean {
             throw new RuntimeException("This is not good!");
         }
     }
+
+    public void findAllDogs(Exchange exchange) {
+        List<Dog> resultList = em.createQuery("select d from Dog d", Dog.class).getResultList();
+        TypedQuery<Dog> dogQuery = em2.createQuery("select d from Dog d",Dog.class);
+        exchange.getIn().setBody(dogQuery.getResultList());
+    }
+
 }

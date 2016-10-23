@@ -28,12 +28,10 @@ package org.harms.camel.route;
 public enum CamelEntityManagerRoutes {
 
     DIRECT_PERSIST ("direct:persist","directPersist"),
-    END_OF_LINE1("direct:endofline1","endOfLine1"),
-    END_OF_LINE2("direct:endofline2","endOfLine2"),
-    END_OF_LINE3("direct:endofline3","endOfLine3"),
     MANUEL_POLL_JPA ("direct:manuelPolling","manuelPolling"),
     DIRECT_JPA ("jpa:org.harms.camel.entity.Dog","directJpa"),
-    DIRECT_FIND("direct:find","directFind");
+    DIRECT_FIND("direct:find","directFind"),
+    DIRECT_JPA_MANAGER2("direct:findEntityManager2", "directEntityManager2");
 
     private final String routeUri;
     private final String routeId;

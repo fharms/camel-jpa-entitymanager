@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,134 +22,155 @@
  */
 package org.harms.camel.route;
 
-import org.apache.camel.BeanInject;
-import org.apache.camel.EndpointInject;
 import org.apache.camel.Exchange;
+import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.builder.AdviceWithRouteBuilder;
-import org.apache.camel.component.jpa.JpaComponent;
-import org.apache.camel.component.mock.MockEndpoint;
-import org.apache.camel.model.ModelCamelContext;
+import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
-import org.apache.camel.test.spring.CamelSpringJUnit4ClassRunner;
+import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
-import org.apache.camel.test.spring.UseAdviceWith;
 import org.harms.camel.entity.Dog;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.Commit;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import java.util.List;
 
-/**
- * Created by fharms on 24/09/16.
- */
-@RunWith(CamelSpringJUnit4ClassRunner.class)
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static org.harms.camel.route.CamelEntityManagerRoutes.*;
+
+@RunWith(CamelSpringRunner.class)
 @BootstrapWith(CamelTestContextBootstrapper.class)
 @ContextConfiguration(classes = CamelEntityManagerRoute.CamelContextConfiguration.class, loader = CamelSpringDelegatingTestContextLoader.class)
-@UseAdviceWith
+@Transactional
+@Commit
 public class CamelEntityManagerRouteTest {
-
-    @EndpointInject(uri = "direct:persist")
-    private ProducerTemplate producerPersist;
-
-    @EndpointInject(uri = "direct:find")
-    private ProducerTemplate producerFind;
-
-    @EndpointInject(uri = "direct:manuelPolling")
-    private ProducerTemplate manuelPolling;
-
-    @EndpointInject(uri = "mock:persistResult")
-    private MockEndpoint resultPersistEndpoint;
-
-    @EndpointInject(uri = "mock:findResult")
-    private MockEndpoint resultFindEndpoint;
-
-    @BeanInject
-    private JpaComponent jpaComponent;
 
     private Dog alphaDoc;
 
+    @Produce
+    private ProducerTemplate template;
+
+    private TransactionTemplate txTemplate;
+
+    @PersistenceContext(unitName = "emf")
+    private EntityManager em;
+
+    @Autowired
+    protected PlatformTransactionManager transactionManager;
+
     @Before
     public void setupDatabaseData() {
-        EntityManager em = jpaComponent.getEntityManagerFactory().createEntityManager();
-        em.getTransaction().begin();
+        txTemplate = new TransactionTemplate(transactionManager);
+        txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         alphaDoc = createDog("Skippy", "Terrier");
-        em.persist(alphaDoc);
-        em.flush();
-        em.getTransaction().commit();
+        txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                em.persist(alphaDoc);
+                return null;
+            }
+        });
     }
 
-    @Before
-    public void adviceWith() throws Exception {
-        final ModelCamelContext context = (ModelCamelContext) producerPersist.getCamelContext();
-        context.getRouteDefinition(CamelEntityManagerRoutes.DIRECT_PERSIST.id()).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint(CamelEntityManagerRoutes.END_OF_LINE1.uri())
-                        .to(resultPersistEndpoint.getEndpointUri());
-
-            }
-        });
-
-        context.getRouteDefinition(CamelEntityManagerRoutes.DIRECT_FIND.id()).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint(CamelEntityManagerRoutes.END_OF_LINE2.uri())
-                    .to(resultFindEndpoint.getEndpointUri());
-
-            }
-        });
-
-        context.getRouteDefinition(CamelEntityManagerRoutes.MANUEL_POLL_JPA.id()).adviceWith(context, new AdviceWithRouteBuilder() {
-            @Override
-            public void configure() throws Exception {
-                interceptSendToEndpoint(CamelEntityManagerRoutes.END_OF_LINE3.uri())
-                        .to(resultFindEndpoint.getEndpointUri());
-
-            }
-        });
-        context.start();
+    @After
+    public void cleanup() {
+        em.createQuery("delete from Dog").executeUpdate();
     }
 
     @Test
+    @DirtiesContext
     public void testEntityManagerInject() throws Exception {
-        resultPersistEndpoint.reset();
-        resultPersistEndpoint.setExpectedCount(1);
+        final Dog dog = createDog("Fiddo", "Beagle");
 
-        Dog dog = createDog("Fiddo","Beagle");
+        txTemplate.execute(new TransactionCallback() {
+            public Object doInTransaction(TransactionStatus status) {
+                return template.send(DIRECT_PERSIST.uri(), createExchange(dog));
+            }
+        });
 
-        producerPersist.sendBody(dog);
+        assertEquals(dog,findDog(dog.getId()));
 
-        resultPersistEndpoint.assertIsSatisfied();
-        Exchange exchange = resultPersistEndpoint.getReceivedExchanges().get(0);
-        Dog dog2 = exchange.getIn().getBody(Dog.class);
+        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                return template.send(DIRECT_FIND.uri(), createExchange(new Long(dog.getId())));
+            }
+        });
+
+        Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
-
-        resultFindEndpoint.reset();
-        resultFindEndpoint.setExpectedCount(1);
-        producerFind.sendBody(new Long(dog2.getId()));
-        resultFindEndpoint.assertIsSatisfied();
-
-        exchange = resultFindEndpoint.getReceivedExchanges().get(0);
-        dog2 = exchange.getIn().getBody(Dog.class);
-        Assert.assertEquals(dog, dog2);
-
     }
 
     @Test
-    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
-        Dog boldDog = createDog("Bold", "Terrier");
-        resultFindEndpoint.setExpectedCount(1);
-        manuelPolling.sendBody(boldDog);
-        resultFindEndpoint.assertIsSatisfied();
-        Exchange exchange = resultFindEndpoint.getReceivedExchanges().get(0);
-        Dog dog = exchange.getIn().getBody(Dog.class);
-        Assert.assertEquals(boldDog,dog);
+    @DirtiesContext
+    public void testEntityManagerInjectFind() throws Exception {
+        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                return template.send(DIRECT_FIND.uri(), createExchange(new Long(alphaDoc.getId())));
+            }
+        });
 
+        Dog dog2 = result.getIn().getBody(Dog.class);
+        Assert.assertEquals(alphaDoc, dog2);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
+        final Dog boldDog = createDog("Bold", "Terrier");
+        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                return template.send(MANUEL_POLL_JPA.uri(), createExchange(boldDog));
+            }
+        });
+        Dog dog = result.getIn().getBody(Dog.class);
+        Assert.assertEquals(boldDog, dog);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testEntityManager2Query() throws Exception {
+        final Dog boldDog = createDog("Bold", "Terrier");
+        txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                return template.send(DIRECT_PERSIST.uri(), createExchange(boldDog));
+            }
+        });
+
+        assertNotNull(findDog(boldDog.getId()));
+        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
+            public Exchange doInTransaction(TransactionStatus status) {
+                return template.send(DIRECT_JPA_MANAGER2.uri(), createExchange(null));
+            }
+        });
+        List dogs = result.getIn().getBody(List.class);
+        Assert.assertEquals(2, dogs.size());
+    }
+
+    private Dog findDog(Long id) {
+        return em.find(Dog.class, id);
+    }
+
+
+    private Exchange createExchange(Object body) {
+        DefaultExchange exchange = new DefaultExchange(template.getCamelContext());
+        exchange.getIn().setBody(body);
+        return exchange;
     }
 
     private Dog createDog(String petName, String race) {
@@ -158,5 +179,6 @@ public class CamelEntityManagerRouteTest {
         dog.setRace(race);
         return dog;
     }
+
 
 }

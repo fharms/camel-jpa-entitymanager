@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,12 +22,11 @@
  */
 package org.harms.camel.route;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.LoggingLevel;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jpa.JpaComponent;
 import org.apache.camel.spring.javaconfig.CamelConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -39,32 +38,24 @@ class CamelEntityManagerRoute extends RouteBuilder {
         from(CamelEntityManagerRoutes.DIRECT_PERSIST.uri())
                 .routeId(CamelEntityManagerRoutes.DIRECT_PERSIST.id())
                 .transacted()
-                .bean(CamelEntityManagerTestBean.class, "persistDog")
-                .to(CamelEntityManagerRoutes.END_OF_LINE1.uri());
+                .bean(CamelEntityManagerTestBean.class, "persistDog");
 
         from(CamelEntityManagerRoutes.DIRECT_FIND.uri())
                 .routeId(CamelEntityManagerRoutes.DIRECT_FIND.id())
                 .transacted()
-                .bean(CamelEntityManagerTestBean.class, "findDog")
-                .to(CamelEntityManagerRoutes.END_OF_LINE2.uri());
+                .bean(CamelEntityManagerTestBean.class, "findDog");
 
-       from(CamelEntityManagerRoutes.MANUEL_POLL_JPA.uri())
+        from(CamelEntityManagerRoutes.MANUEL_POLL_JPA.uri())
                 .routeId(CamelEntityManagerRoutes.MANUEL_POLL_JPA.id())
                 .enrich(CamelEntityManagerRoutes.DIRECT_JPA.uri())
                 .transacted()
-                .bean(CamelEntityManagerTestBean.class, "findAnotherDog")
-                .to(CamelEntityManagerRoutes.END_OF_LINE3.uri());
-
-        from(CamelEntityManagerRoutes.END_OF_LINE1.uri())
-                .routeId(CamelEntityManagerRoutes.END_OF_LINE1.id()).log(LoggingLevel.INFO,"End of line!!");
-
-        from(CamelEntityManagerRoutes.END_OF_LINE2.uri())
-                .routeId(CamelEntityManagerRoutes.END_OF_LINE2.id()).log(LoggingLevel.INFO,"End of line!!");
-
-        from(CamelEntityManagerRoutes.END_OF_LINE3.uri())
-                .routeId(CamelEntityManagerRoutes.END_OF_LINE3.id()).log(LoggingLevel.INFO,"End of line!!");
+                .bean(CamelEntityManagerTestBean.class, "findAnotherDog");
 
 
+        from(CamelEntityManagerRoutes.DIRECT_JPA_MANAGER2.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_JPA_MANAGER2.id())
+                .transacted()
+                .bean(CamelEntityManagerTestBean.class, "findAllDogs");
     }
 
     /**
@@ -75,12 +66,12 @@ class CamelEntityManagerRoute extends RouteBuilder {
     public static class CamelContextConfiguration extends CamelConfiguration {
 
         @Autowired
-        JpaComponent jpaComponent;
+        @Qualifier("jpa")
+        JpaComponent jpaComponent1;
 
-        @Override
-        protected void setupCamelContext(CamelContext camelContext) throws Exception {
-            camelContext.addComponent("jpa", jpaComponent);
-        }
+        @Autowired
+        @Qualifier("jpa2")
+        JpaComponent jpaComponent2;
 
     }
 }
