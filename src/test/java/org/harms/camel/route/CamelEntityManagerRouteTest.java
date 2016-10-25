@@ -33,7 +33,9 @@ import org.harms.camel.entity.Dog;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.Commit;
@@ -42,7 +44,7 @@ import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -80,11 +82,9 @@ public class CamelEntityManagerRouteTest {
         txTemplate = new TransactionTemplate(transactionManager);
         txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         alphaDoc = createDog("Skippy", "Terrier");
-        txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
+        txTemplate.execute((TransactionCallback) status -> {
                 em.persist(alphaDoc);
                 return null;
-            }
         });
     }
 
@@ -98,19 +98,11 @@ public class CamelEntityManagerRouteTest {
     public void testEntityManagerInject() throws Exception {
         final Dog dog = createDog("Fiddo", "Beagle");
 
-        txTemplate.execute(new TransactionCallback() {
-            public Object doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_PERSIST.uri(), createExchange(dog));
-            }
-        });
+        txTemplate.execute((TransactionCallback) status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog)));
 
-        assertEquals(dog,findDog(dog.getId()));
+        assertEquals(dog, findDog(dog.getId()));
 
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_FIND.uri(), createExchange(new Long(dog.getId())));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(new Long(dog.getId()))));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
@@ -119,11 +111,7 @@ public class CamelEntityManagerRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerInjectFind() throws Exception {
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_FIND.uri(), createExchange(new Long(alphaDoc.getId())));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(new Long(alphaDoc.getId()))));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(alphaDoc, dog2);
@@ -133,11 +121,7 @@ public class CamelEntityManagerRouteTest {
     @DirtiesContext
     public void testEntityManagerInjectWithJpaConsumer() throws Exception {
         final Dog boldDog = createDog("Bold", "Terrier");
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(MANUEL_POLL_JPA.uri(), createExchange(boldDog));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_TEST.uri(), createExchange(boldDog)));
         Dog dog = result.getIn().getBody(Dog.class);
         Assert.assertEquals(boldDog, dog);
     }
@@ -145,11 +129,7 @@ public class CamelEntityManagerRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerInjectCompareHashCode() throws Exception {
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_COMPARE_HASHCODE.uri(), createExchange(null));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_COMPARE_HASHCODE_TEST.uri(), createExchange(null)));
         Integer hashcode = result.getIn().getBody(Integer.class);
         assertNotNull(hashcode);
     }
@@ -157,34 +137,35 @@ public class CamelEntityManagerRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerNestedCalls() throws Exception {
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_NESTED_BEAN.uri(), createExchange(createDog("Bold", "Terrier")));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_NESTED_BEAN_TEST.uri(), createExchange(createDog("Bold", "Terrier"))));
         Dog dog = result.getIn().getBody(Dog.class);
-        assertEquals("Joe",dog.getPetName());
-        assertEquals("German Shepherd",dog.getRace());
+        assertEquals("Joe", dog.getPetName());
+        assertEquals("German Shepherd", dog.getRace());
     }
 
     @Test
     @DirtiesContext
     public void testWithTwoEntityManagersQuery() throws Exception {
         final Dog boldDog = createDog("Bold", "Terrier");
-        txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_PERSIST.uri(), createExchange(boldDog));
-            }
-        });
+        txTemplate.execute(status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(boldDog)));
 
         assertNotNull(findDog(boldDog.getId()));
-        Exchange result = txTemplate.execute(new TransactionCallback<Exchange>() {
-            public Exchange doInTransaction(TransactionStatus status) {
-                return template.send(DIRECT_JPA_MANAGER2.uri(), createExchange(null));
-            }
-        });
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST_WITH_TWO_EM.uri(), createExchange(null)));
         List dogs = result.getIn().getBody(List.class);
         Assert.assertEquals(2, dogs.size());
+    }
+
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
+    @Test
+    @DirtiesContext
+    public void testRollback() throws Exception {
+        thrown.expect(TransactionSystemException.class);
+        thrown.expectMessage("Could not commit JPA transaction");
+        txTemplate.execute(status -> template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null)));
+
+
     }
 
     private Dog findDog(Long id) {

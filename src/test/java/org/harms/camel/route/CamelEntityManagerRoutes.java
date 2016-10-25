@@ -27,13 +27,14 @@ package org.harms.camel.route;
  */
 public enum CamelEntityManagerRoutes {
 
-    DIRECT_PERSIST ("direct:persist","directPersist"),
-    MANUEL_POLL_JPA ("direct:manuelPolling","manuelPolling"),
-    DIRECT_JPA ("jpa:org.harms.camel.entity.Dog","directJpa"),
-    DIRECT_FIND("direct:find","directFind"),
-    DIRECT_JPA_MANAGER2("direct:findEntityManager2", "directEntityManager2"),
-    DIRECT_COMPARE_HASHCODE("direct:compareHashCode", "compareHashCode"),
-    DIRECT_NESTED_BEAN("direct:nestedBean", "nestedBean");
+    DIRECT_PERSIST_TEST("direct:persistTest","directPersistTest"),
+    MANUEL_POLL_JPA_TEST("direct:manuelPollingTest","manuelPollingTest"),
+    DIRECT_JPA_TEST("jpa:org.harms.camel.entity.Dog","directJpaTest"),
+    DIRECT_FIND_TEST("direct:findTest","directFindTest"),
+    DIRECT_FIND_TEST_WITH_TWO_EM("direct:findTestWithTwoEntityManagers", "findTestWithTwoEntityManagers"),
+    DIRECT_COMPARE_HASHCODE_TEST("direct:compareHashCodeTest", "compareHashCodeTest"),
+    DIRECT_NESTED_BEAN_TEST("direct:nestedBeanTest", "nestedBeanTest"),
+    DIRECT_ROLLBACK_TEST("direct:rollbackTest", "rollbackTest");
 
     private final String routeUri;
     private final String routeId;

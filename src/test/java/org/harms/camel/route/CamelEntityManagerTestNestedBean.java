@@ -41,7 +41,7 @@ public class CamelEntityManagerTestNestedBean {
 
     public Dog persistDog(EntityManager parentEm){
         if (parentEm.hashCode() != em.hashCode()) {
-            throw new RuntimeException("This is not good!");
+            throw new RuntimeException("This is not good, hashCode is different!");
         }
 
         Dog dog = new Dog();

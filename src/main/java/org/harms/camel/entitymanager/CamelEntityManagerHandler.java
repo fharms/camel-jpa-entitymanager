@@ -23,7 +23,6 @@
 package org.harms.camel.entitymanager;
 
 import org.aopalliance.intercept.MethodInterceptor;
-import org.aopalliance.intercept.MethodInvocation;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.jpa.JpaComponent;
 import org.apache.camel.model.ModelCamelContext;
@@ -42,20 +41,22 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Create a {@link EntityManager} proxy for the EntityManager for handling logic regarding creating and terminate
  * new entity managers on invoking specific methods. For reusing the EntityManager inside a transaction
  * scope it's cashed as part of the {@link ThreadLocal} with the {@link JpaComponent} as key.
- *
+ * <p>
  * <p>
  * When the transaction is completed it will clear and remove the EntityManager for manual created
  * entity managers. For Camel specific entity managers is removed from the ThreadLocal cache and Camel
  * is responsible for clean and terminate the EntityManager.
  * </p>
- *
+ * <p>
  * <p>
  * If an EntityManager was created by Camel it will use the EntityManager registered in the header "CamelEntityManager".
  * The bean proxy created as part of the {@link EntityManager} proxy intercept all method call with the parameter
@@ -63,7 +64,6 @@ import java.util.List;
  * It possible to ignore the Camel Entity manager and let the CamelEntityManagerHandler created a new by added
  * the {@code @CamelEntityManager(ignoreCamelEntityManager = true)}
  * </p>
- *
  */
 @Component
 public class CamelEntityManagerHandler {
@@ -86,62 +86,54 @@ public class CamelEntityManagerHandler {
         try {
             annotatedFields = getAnnotatedFields(bean);
         } catch (IllegalAccessException e) {
-            throw new BeanCreationException("Failed to scan for for @CamelEntityManager",e);
+            throw new BeanCreationException("Failed scanning @CamelEntityManager", e);
         }
 
-        if (annotatedFields.size() > 0) {
-            for (Field field : annotatedFields) {
-                try {
-                    CamelEntityManager annotation = field.getAnnotation(CamelEntityManager.class);
-                    EntityManager entityManagerProxy = createCamelEntityManagerProxy(EntityManager.class, annotation);
+        if (annotatedFields.size() == 0) {
+            return bean;
+        }
 
-                    boolean currentAccessibleState = field.isAccessible();
+        annotatedFields.forEach(field -> {
+            try {
+                CamelEntityManager annotation = field.getAnnotation(CamelEntityManager.class);
+                EntityManager entityManagerProxy = createCamelEntityManagerProxy(EntityManager.class, annotation);
 
-                    field.setAccessible(true);
-                    field.set(bean, entityManagerProxy);
-                    field.setAccessible(currentAccessibleState);
+                boolean currentAccessibleState = field.isAccessible();
 
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
+                field.setAccessible(true);
+                field.set(bean, entityManagerProxy);
+                field.setAccessible(currentAccessibleState);
+
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
-            return createBeanProxy(bean);
+        });
 
-        }
-        return bean;
+        return createBeanProxy(bean);
 
     }
 
+
     private Object createBeanProxy(Object bean) {
 
-        MethodInterceptor handler = new MethodInterceptor() {
-
-            @Override
-            public Object invoke(MethodInvocation invocation) throws Throwable {
-                Method method = invocation.getMethod();
-                switch (method.getName()) {
-                    case "hashCode":
-                        return hashCode();
-                    case "equals":
-                        return (invocation.getThis() == invocation.getArguments()[0]);
-                    case "toString":
-                        return toString();
-                }
-
-                for (Object arg : invocation.getArguments()) {
-                    if (arg instanceof Exchange) {
-                        //Let's check if there is already an Entity manager register
-                        EntityManager em = ((Exchange) arg).getIn().getHeader(CAMEL_ENTITY_MANAGER, EntityManager.class);
-                        //set the thread local with the entity manager for later use
-                        if (em != null) {
-                            addThreadLocalEntityManager(em, CAMEL_ENTITY_MANAGER, false);
-                        }
-                        break;
-                    }
-                }
-                return invocation.proceed();
+        MethodInterceptor handler = invocation -> {
+            Method method = invocation.getMethod();
+            switch (method.getName()) {
+                case "hashCode":
+                    return hashCode();
+                case "equals":
+                    return (invocation.getThis() == invocation.getArguments()[0]);
+                case "toString":
+                    return toString();
             }
 
+            Arrays.stream(invocation.getArguments())
+                    .filter(f -> f instanceof Exchange)
+                    .findFirst()
+                    .map(Exchange.class::cast)
+                    .map(o -> o.getProperty(CAMEL_ENTITY_MANAGER, EntityManager.class))
+                    .ifPresent(em -> addThreadLocalEntityManager(em, CAMEL_ENTITY_MANAGER, false));
+            return invocation.proceed();
         };
 
         ProxyFactory factory = new ProxyFactory(bean);
@@ -152,36 +144,26 @@ public class CamelEntityManagerHandler {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T createCamelEntityManagerProxy(Class<T> interfaceClass, final CamelEntityManager jpaComponent) {
+    private <T> T createCamelEntityManagerProxy(Class<T> interfaceClass, final CamelEntityManager cem) {
+        InvocationHandler handler = (proxy, method, args) -> {
+            EntityManager em = getEntityManager(cem.jpaComponent(), cem.ignoreCamelEntityManager())
+                    .orElseGet(() -> createCamelEntityManager(cem.jpaComponent())
+                            .map(entityManager -> addThreadLocalEntityManager(entityManager, cem.jpaComponent(), cem.ignoreCamelEntityManager()))
+                            .orElseThrow(() -> new RuntimeException("Unable to instantiate EntityManager")));
 
-        InvocationHandler handler = new InvocationHandler() {
-
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-
-                EntityManager em = getEntityManager(jpaComponent.jpaComponent(), jpaComponent.ignoreCamelEntityManager());
-                switch (method.getName()) {
-                    case "hashCode":
-                        return em.hashCode();
-                    case "equals":
-                        return (em == args[0]);
-                    case "getEntityManagerFactory":
-                        return getEntityManagerFactory(jpaComponent.jpaComponent());
-                    case "toString":
-                        return "Camel EntityManager proxy [" + getEntityManagerFactory(jpaComponent.jpaComponent()) + "]";
-                }
-
-                if (em == null) {
-                    em = createCamelEntityManager(jpaComponent.jpaComponent());
-                    if (em == null) {
-                        throw new RuntimeException("Unable to instantiate EntityManager");
-                    }
-                    addThreadLocalEntityManager(em, jpaComponent.jpaComponent(), jpaComponent.ignoreCamelEntityManager());
-                }
-
-                em.joinTransaction();
-                return method.invoke(em, args);
+            switch (method.getName()) {
+                case "hashCode":
+                    return em.hashCode();
+                case "equals":
+                    return em == args[0];
+                case "getEntityManagerFactory":
+                    return getEntityManagerFactory(cem.jpaComponent());
+                case "toString":
+                    return "Camel EntityManager proxy [" + getEntityManagerFactory(cem.jpaComponent()) + "]";
             }
+            em.joinTransaction();
 
+            return method.invoke(em, args);
         };
 
         return (T) Proxy.newProxyInstance(interfaceClass.getClassLoader(), new Class[]{interfaceClass}, handler);
@@ -218,12 +200,12 @@ public class CamelEntityManagerHandler {
         return annotatedFields;
     }
 
-    private void addThreadLocalEntityManager(EntityManager em, String jpaComponentName, boolean ignoreCamelEntityManager) {
+    private EntityManager addThreadLocalEntityManager(EntityManager em, String jpaComponentName, boolean ignoreCamelEntityManager) {
         TransactionSynchronizationManager.registerSynchronization(
                 new SessionCloseSynchronizationManager(jpaComponentName, ignoreCamelEntityManager)
         );
-        HashMap<String, EntityManager> emMap = entityManagerMapLocal.get();
-        emMap.put(jpaComponentName, em);
+        entityManagerMapLocal.get().put(jpaComponentName, em);
+        return em;
     }
 
     /**
@@ -233,14 +215,9 @@ public class CamelEntityManagerHandler {
      * @param jpaComponentName The name of the registered jpa component containing {@link EntityManagerFactory}
      * @return a new {@link EntityManager}
      */
-    private EntityManager createCamelEntityManager(String jpaComponentName) {
-
-        EntityManagerFactory emf = getEntityManagerFactory(jpaComponentName);
-        if (emf != null) {
-            return emf.createEntityManager();
-        }
-        return null;
-
+    private Optional<EntityManager> createCamelEntityManager(String jpaComponentName) {
+        return Optional.ofNullable(getEntityManagerFactory(jpaComponentName))
+                .map(EntityManagerFactory::createEntityManager);
     }
 
     /**
@@ -248,16 +225,11 @@ public class CamelEntityManagerHandler {
      * @return return the {@link EntityManagerFactory} bind to the specified jpa component
      */
     private EntityManagerFactory getEntityManagerFactory(String jpaComponentName) {
-        ModelCamelContext camelContext = context.getBean(ModelCamelContext.class);
-        if (camelContext == null) {
-            throw new IllegalStateException("No camel context registered");
-        }
+        ModelCamelContext camelContext = Optional.of(context.getBean(ModelCamelContext.class))
+                .orElseThrow(() -> new IllegalStateException("No camel context registered"));
 
-        JpaComponent jpaComponent = camelContext.getComponent(jpaComponentName, JpaComponent.class);
-
-        if (jpaComponent == null) {
-            throw new IllegalStateException(String.format("No camel jpa component was registered with the name %s", jpaComponentName));
-        }
+        JpaComponent jpaComponent = Optional.of(camelContext.getComponent(jpaComponentName, JpaComponent.class))
+                .orElseThrow(() -> new IllegalStateException(String.format("No camel jpa component was registered with the name %s", jpaComponentName)));
 
         return jpaComponent.getEntityManagerFactory();
     }
@@ -271,14 +243,12 @@ public class CamelEntityManagerHandler {
      * @param jpaComponentName         Name of the JPA component
      * @param ignoreCamelEntityManager True if should ignore the Camel Entity Manager
      */
-    private EntityManager getEntityManager(String jpaComponentName, boolean ignoreCamelEntityManager) {
+    private Optional<EntityManager> getEntityManager(String jpaComponentName, boolean ignoreCamelEntityManager) {
         if (!ignoreCamelEntityManager) {
-            EntityManager em = entityManagerMapLocal.get().get(CAMEL_ENTITY_MANAGER);
-            if (em != null) {
-                return em;
-            }
+            return Optional.ofNullable(Optional.ofNullable(entityManagerMapLocal.get().get(CAMEL_ENTITY_MANAGER))
+                    .orElseGet(() -> entityManagerMapLocal.get().get(jpaComponentName)));
         }
-        return entityManagerMapLocal.get().get(jpaComponentName);
+        return Optional.ofNullable(entityManagerMapLocal.get().get(jpaComponentName));
     }
 
 
@@ -302,10 +272,10 @@ public class CamelEntityManagerHandler {
 
         @Override
         public void afterCompletion(int status) {
-            EntityManager em = getEntityManager(jpaComponentName, ignoreCamelEntityManager);
-            if (em != null && em.isOpen() && !CAMEL_ENTITY_MANAGER.equals(jpaComponentName)) {
-                em.close();
-            }
+            Optional<EntityManager> em = getEntityManager(jpaComponentName, ignoreCamelEntityManager);
+            em.filter(EntityManager::isOpen)
+                    .filter(entityManager -> !CAMEL_ENTITY_MANAGER.equals(jpaComponentName))
+                    .ifPresent(EntityManager::close);
             entityManagerMapLocal.get().remove(jpaComponentName);
         }
     }

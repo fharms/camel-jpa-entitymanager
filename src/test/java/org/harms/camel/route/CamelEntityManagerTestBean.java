@@ -49,45 +49,48 @@ public class CamelEntityManagerTestBean {
 
     @CamelEntityManager(jpaComponent = "jpa2", ignoreCamelEntityManager = true)
     private EntityManager em2;
-    
+
     @Autowired
     CamelEntityManagerTestNestedBean nBean;
 
-    public Dog persistDog(@Body Dog dogEntity){
+    public Dog persistDog(@Body Dog dogEntity) {
         em.persist(dogEntity);
         return dogEntity;
     }
 
-    public Dog findDog(@Body Long id){
+    public Dog findDog(@Body Long id) {
         Dog dog = em.find(Dog.class, id);
         return dog;
     }
 
     public void findAnotherDog(Exchange exchange) {
-        Object localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        EntityManager localEm = exchange.getProperty(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
         if (!em.equals(localEm)) {
             throw new RuntimeException("This is not good!");
         }
     }
 
     public void findAllDogs(Exchange exchange) {
-        TypedQuery<Dog> dogQuery = em2.createQuery("select d from Dog d",Dog.class);
+        TypedQuery<Dog> dogQuery = em2.createQuery("select d from Dog d", Dog.class);
         exchange.getIn().setBody(dogQuery.getResultList());
     }
 
     public Integer compareHashCode(Exchange exchange) {
         CamelContext context = exchange.getContext();
         EntityManagerFactory currentEm = em.getEntityManagerFactory();
-        if (currentEm.hashCode() != context.getComponent("jpa",JpaComponent.class).getEntityManagerFactory().hashCode()) {
+        if (currentEm.hashCode() != context.getComponent("jpa", JpaComponent.class).getEntityManagerFactory().hashCode()) {
             throw new RuntimeException("This is not good!");
         }
         return new Integer(currentEm.hashCode());
     }
-    
-    public Dog persistWithNedstedCall(@Body Dog body){
+
+    public Dog persistWithNedstedCall(@Body Dog body) {
         em.persist(body);
         return nBean.persistDog(em);
+    }
 
+    public void forceRollback() {
+        em.persist(new Object());
     }
 
 }

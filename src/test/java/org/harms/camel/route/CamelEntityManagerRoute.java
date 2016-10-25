@@ -36,36 +36,41 @@ import org.springframework.stereotype.Component;
 class CamelEntityManagerRoute extends RouteBuilder {
 
     public void configure() throws Exception {
-        from(CamelEntityManagerRoutes.DIRECT_PERSIST.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_PERSIST.id())
+        from(CamelEntityManagerRoutes.DIRECT_PERSIST_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_PERSIST_TEST.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "persistDog");
 
-        from(CamelEntityManagerRoutes.DIRECT_FIND.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_FIND.id())
+        from(CamelEntityManagerRoutes.DIRECT_FIND_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_FIND_TEST.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "findDog");
 
-        from(CamelEntityManagerRoutes.DIRECT_COMPARE_HASHCODE.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_COMPARE_HASHCODE.id())
+        from(CamelEntityManagerRoutes.DIRECT_COMPARE_HASHCODE_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_COMPARE_HASHCODE_TEST.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "compareHashCode");
 
-        from(CamelEntityManagerRoutes.MANUEL_POLL_JPA.uri())
-                .routeId(CamelEntityManagerRoutes.MANUEL_POLL_JPA.id())
-                .enrich(CamelEntityManagerRoutes.DIRECT_JPA.uri())
+        from(CamelEntityManagerRoutes.MANUEL_POLL_JPA_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.MANUEL_POLL_JPA_TEST.id())
+                .enrich(CamelEntityManagerRoutes.DIRECT_JPA_TEST.uri())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "findAnotherDog");
 
-        from(CamelEntityManagerRoutes.DIRECT_NESTED_BEAN.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_NESTED_BEAN.id())
+        from(CamelEntityManagerRoutes.DIRECT_NESTED_BEAN_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_NESTED_BEAN_TEST.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "persistWithNedstedCall");
 
-        from(CamelEntityManagerRoutes.DIRECT_JPA_MANAGER2.uri())
-                .routeId(CamelEntityManagerRoutes.DIRECT_JPA_MANAGER2.id())
+        from(CamelEntityManagerRoutes.DIRECT_FIND_TEST_WITH_TWO_EM.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_FIND_TEST_WITH_TWO_EM.id())
                 .transacted()
                 .bean(CamelEntityManagerTestBean.class, "findAllDogs");
+
+        from(CamelEntityManagerRoutes.DIRECT_ROLLBACK_TEST.uri())
+                .routeId(CamelEntityManagerRoutes.DIRECT_ROLLBACK_TEST.id())
+                .transacted()
+                .bean(CamelEntityManagerTestBean.class, "forceRollback");
     }
 
     /**
