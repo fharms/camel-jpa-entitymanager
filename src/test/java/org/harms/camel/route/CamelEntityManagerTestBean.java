@@ -59,8 +59,7 @@ public class CamelEntityManagerTestBean {
     }
 
     public Dog findDog(@Body Long id) {
-        Dog dog = em.find(Dog.class, id);
-        return dog;
+        return em.find(Dog.class, id);
     }
 
     public void findAnotherDog(Exchange exchange) {
@@ -81,7 +80,7 @@ public class CamelEntityManagerTestBean {
         if (currentEm.hashCode() != context.getComponent("jpa", JpaComponent.class).getEntityManagerFactory().hashCode()) {
             throw new RuntimeException("This is not good!");
         }
-        return new Integer(currentEm.hashCode());
+        return currentEm.hashCode();
     }
 
     public Dog persistWithNedstedCall(@Body Dog body) {

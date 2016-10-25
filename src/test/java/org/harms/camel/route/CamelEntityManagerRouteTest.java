@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -83,8 +83,8 @@ public class CamelEntityManagerRouteTest {
         txTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         alphaDoc = createDog("Skippy", "Terrier");
         txTemplate.execute((TransactionCallback) status -> {
-                em.persist(alphaDoc);
-                return null;
+            em.persist(alphaDoc);
+            return null;
         });
     }
 
@@ -102,7 +102,7 @@ public class CamelEntityManagerRouteTest {
 
         assertEquals(dog, findDog(dog.getId()));
 
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(new Long(dog.getId()))));
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(dog.getId())));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
@@ -111,7 +111,7 @@ public class CamelEntityManagerRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerInjectFind() throws Exception {
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(new Long(alphaDoc.getId()))));
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId())));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(alphaDoc, dog2);

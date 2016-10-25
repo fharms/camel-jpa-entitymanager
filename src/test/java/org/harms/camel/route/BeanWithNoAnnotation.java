@@ -27,13 +27,13 @@ import org.harms.camel.entity.Dog;
 import javax.persistence.EntityManager;
 
 /**
- * Created by fharms on 10/10/16.
+ * Use for test purpose
  */
 public class BeanWithNoAnnotation {
 
     private EntityManager em;
 
     public void findDog(){
-        em.find(Dog.class,new Long(1));
+        em.find(Dog.class, 1L);
     }
 }

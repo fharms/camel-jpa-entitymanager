@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -70,7 +70,7 @@ public class CamelEntityManagerHandler {
 
     public static final String CAMEL_ENTITY_MANAGER = "CamelEntityManager";
 
-    private ThreadLocal<HashMap<String, EntityManager>> entityManagerMapLocal = new ThreadLocal<HashMap<String, EntityManager>>() {
+    private final ThreadLocal<HashMap<String, EntityManager>> entityManagerMapLocal = new ThreadLocal<HashMap<String, EntityManager>>() {
         @Override
         protected HashMap<String, EntityManager> initialValue() {
             return new HashMap<>();
@@ -108,14 +108,10 @@ public class CamelEntityManagerHandler {
                 throw new RuntimeException(e);
             }
         });
-
         return createBeanProxy(bean);
-
     }
 
-
     private Object createBeanProxy(Object bean) {
-
         MethodInterceptor handler = invocation -> {
             Method method = invocation.getMethod();
             switch (method.getName()) {
@@ -140,7 +136,6 @@ public class CamelEntityManagerHandler {
         factory.addAdvice(handler);
 
         return factory.getProxy();
-
     }
 
     @SuppressWarnings("unchecked")
@@ -150,7 +145,6 @@ public class CamelEntityManagerHandler {
                     .orElseGet(() -> createCamelEntityManager(cem.jpaComponent())
                             .map(entityManager -> addThreadLocalEntityManager(entityManager, cem.jpaComponent(), cem.ignoreCamelEntityManager()))
                             .orElseThrow(() -> new RuntimeException("Unable to instantiate EntityManager")));
-
             switch (method.getName()) {
                 case "hashCode":
                     return em.hashCode();
@@ -162,7 +156,6 @@ public class CamelEntityManagerHandler {
                     return "Camel EntityManager proxy [" + getEntityManagerFactory(cem.jpaComponent()) + "]";
             }
             em.joinTransaction();
-
             return method.invoke(em, args);
         };
 
@@ -183,7 +176,6 @@ public class CamelEntityManagerHandler {
         }
 
         Field[] declaredFields = bean.getClass().getDeclaredFields();
-
         for (Field field : declaredFields) {
             boolean currentAccessible = field.isAccessible();
             field.setAccessible(true);
@@ -233,7 +225,6 @@ public class CamelEntityManagerHandler {
 
         return jpaComponent.getEntityManagerFactory();
     }
-
 
     /**
      * Return the registered thread local {@link EntityManager}. If the Camel entity manager
