@@ -1,0 +1,4 @@
+language: JAVA
+script: mvn install
+jdk:
+  - oraclejdk8
