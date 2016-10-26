@@ -42,7 +42,7 @@ import javax.persistence.TypedQuery;
  */
 @Component
 @Transactional(value = "transactionManager")
-public class CamelEntityManagerTestBean {
+public class CamelEntityManagerBean {
 
     @CamelEntityManager
     private EntityManager em;
@@ -50,8 +50,16 @@ public class CamelEntityManagerTestBean {
     @CamelEntityManager(jpaComponent = "jpa2", ignoreCamelEntityManager = true)
     private EntityManager em2;
 
+    private EntityManager em3;
+
+    @CamelEntityManager
+    private Object em4;
+
+    @CamelEntityManager
+    private EntityManager em5;
+
     @Autowired
-    CamelEntityManagerTestNestedBean nBean;
+    CamelEntityManagerNestedBean nBean;
 
     public Dog persistDog(@Body Dog dogEntity) {
         em.persist(dogEntity);
@@ -92,4 +100,7 @@ public class CamelEntityManagerTestBean {
         em.persist(new Object());
     }
 
+    public void persistWithNoAnnotation(@Body Dog dog){
+        em3.persist(dog);
+    }
 }

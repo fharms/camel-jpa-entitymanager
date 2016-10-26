@@ -180,7 +180,7 @@ public class CamelEntityManagerHandler {
             boolean currentAccessible = field.isAccessible();
             field.setAccessible(true);
 
-            if (field.getType().isAssignableFrom(EntityManager.class) &&
+            if (EntityManager.class.isAssignableFrom(field.getType()) &&
                     (field.isAnnotationPresent(CamelEntityManager.class)) &&
                     (field.get(bean) == null)) {
                 annotatedFields.add(field);
@@ -227,9 +227,8 @@ public class CamelEntityManagerHandler {
     }
 
     /**
-     * Return the registered thread local {@link EntityManager}. If the Camel entity manager
-     * is registered it will have precedence, else the {@link EntityManager} for the specified
-     * JPA component is returned.
+     * Return the registered thread local {@link EntityManager}. If Camel has registered a entity manager
+     * it will have precedence, else the {@link EntityManager} for the specified JPA component is returned.
      *
      * @param jpaComponentName         Name of the JPA component
      * @param ignoreCamelEntityManager True if should ignore the Camel Entity Manager
@@ -242,9 +241,8 @@ public class CamelEntityManagerHandler {
         return Optional.ofNullable(entityManagerMapLocal.get().get(jpaComponentName));
     }
 
-
     /**
-     * Clear and close for manual created {@link EntityManager}s when the transaction is complete regardless
+     * Clear and close {@link EntityManager}s when the transaction is complete regardless
      * if it commit or rollback. The cached entity manager is removed as it finally step.
      * <p>
      * For CamelEntityManager it's removed from the internal ThreadLocal since Camel will

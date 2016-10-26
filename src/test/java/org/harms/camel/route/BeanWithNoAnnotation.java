@@ -22,18 +22,25 @@
  */
 package org.harms.camel.route;
 
+import org.apache.camel.Body;
 import org.harms.camel.entity.Dog;
+import org.harms.camel.entitymanager.CamelEntityManager;
+import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 
 /**
  * Use for test purpose
  */
+@Component
 public class BeanWithNoAnnotation {
 
+    @CamelEntityManager
     private EntityManager em;
 
-    public void findDog(){
-        em.find(Dog.class, 1L);
+    public void noTxAnnotation(@Body Dog dog){
+        em.persist(dog);
     }
+
+
 }

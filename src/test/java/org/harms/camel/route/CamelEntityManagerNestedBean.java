@@ -34,7 +34,7 @@ import javax.persistence.EntityManager;
  */
 @Component
 @Transactional(value = "transactionManager")
-public class CamelEntityManagerTestNestedBean {
+public class CamelEntityManagerNestedBean {
 
     @CamelEntityManager
     private EntityManager em;

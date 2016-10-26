@@ -25,21 +25,26 @@ package org.harms.camel.route;
 /**
  * All defined routes with URI and Id
  */
-public enum CamelEntityManagerRoutes {
+public enum CamelEntityManagerTestRoutes {
 
     DIRECT_PERSIST_TEST("direct:persistTest","directPersistTest"),
-    MANUEL_POLL_JPA_TEST("direct:manuelPollingTest","manuelPollingTest"),
-    DIRECT_JPA_TEST("jpa:org.harms.camel.entity.Dog","directJpaTest"),
+    MANUEL_POLL_JPA_PRODUCER_TEST("direct:manuelPollingTest","manuelPollingTest"),
+    MANUEL_POLL_JPA_CONSUMER_TEST("direct:manuelPollingConsumerTest","manuelPollingConsumerTest"),
+    DIRECT_JPN_CONSUMER_TEST("jpa:org.harms.camel.entity.Dog","directJpaPersistTest"),
+    DIRECT_JPA_PRODUCER_TEST("jpa:org.harms.camel.entity.Dog","directJpaProducerTest"),
     DIRECT_FIND_TEST("direct:findTest","directFindTest"),
     DIRECT_FIND_TEST_WITH_TWO_EM("direct:findTestWithTwoEntityManagers", "findTestWithTwoEntityManagers"),
     DIRECT_COMPARE_HASHCODE_TEST("direct:compareHashCodeTest", "compareHashCodeTest"),
     DIRECT_NESTED_BEAN_TEST("direct:nestedBeanTest", "nestedBeanTest"),
-    DIRECT_ROLLBACK_TEST("direct:rollbackTest", "rollbackTest");
+    DIRECT_ROLLBACK_TEST("direct:rollbackTest", "rollbackTest"),
+    DIRECT_WRONG_TYPE("direct:wrongType", "wrongType"),
+    DIRECT_NO_ANNOTATION_TEST("direct:noAnnotationTest", "noAnnotationTest"),
+    DIRECT_NO_TX_ANNOTATION_TEST("direct:noTxTest", "noTxTest");
 
     private final String routeUri;
     private final String routeId;
 
-    CamelEntityManagerRoutes(String routeUri, String routeId) {
+    CamelEntityManagerTestRoutes(String routeUri, String routeId) {
         this.routeUri = routeUri;
         this.routeId = routeId;
     }

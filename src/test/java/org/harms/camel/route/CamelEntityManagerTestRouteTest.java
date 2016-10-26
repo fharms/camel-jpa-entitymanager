@@ -55,14 +55,14 @@ import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
-import static org.harms.camel.route.CamelEntityManagerRoutes.*;
+import static org.harms.camel.route.CamelEntityManagerTestRoutes.*;
 
 @RunWith(CamelSpringRunner.class)
 @BootstrapWith(CamelTestContextBootstrapper.class)
-@ContextConfiguration(classes = CamelEntityManagerRoute.CamelContextConfiguration.class, loader = CamelSpringDelegatingTestContextLoader.class)
+@ContextConfiguration(classes = CamelEntityManagerTestRoute.CamelContextConfiguration.class, loader = CamelSpringDelegatingTestContextLoader.class)
 @Transactional
 @Commit
-public class CamelEntityManagerRouteTest {
+public class CamelEntityManagerTestRouteTest {
 
     private Dog alphaDoc;
 
@@ -98,7 +98,7 @@ public class CamelEntityManagerRouteTest {
     public void testEntityManagerInject() throws Exception {
         final Dog dog = createDog("Fiddo", "Beagle");
 
-        txTemplate.execute((TransactionCallback) status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog)));
+        txTemplate.execute(status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog)));
 
         assertEquals(dog, findDog(dog.getId()));
 
@@ -119,12 +119,21 @@ public class CamelEntityManagerRouteTest {
 
     @Test
     @DirtiesContext
-    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
+    public void testEntityManagerInjectWithJpaProducer() throws Exception {
         final Dog boldDog = createDog("Bold", "Terrier");
-        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_TEST.uri(), createExchange(boldDog)));
-        Dog dog = result.getIn().getBody(Dog.class);
-        Assert.assertEquals(boldDog, dog);
+        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_PRODUCER_TEST.uri(), createExchange(boldDog)));
+        Long id = result.getIn().getBody(Dog.class).getId();
+        Assert.assertEquals(boldDog, findDog(id));
     }
+
+    @Test
+    @DirtiesContext
+    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
+        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_CONSUMER_TEST.uri(), createExchange("")));
+        Dog dog = result.getIn().getBody(Dog.class);
+        Assert.assertEquals(alphaDoc, dog);
+    }
+
 
     @Test
     @DirtiesContext
@@ -154,18 +163,31 @@ public class CamelEntityManagerRouteTest {
         List dogs = result.getIn().getBody(List.class);
         Assert.assertEquals(2, dogs.size());
     }
-
     @Rule
-    public ExpectedException thrown = ExpectedException.none();
+    public ExpectedException RollbackThrown = ExpectedException.none();
+
+    @Test
+    @DirtiesContext
+    public void testNoAnnotation() throws Exception {
+        RollbackThrown.expect(TransactionSystemException.class);
+        final Dog boldDog = createDog("Bold", "Terrier");
+        txTemplate.execute(status -> template.send(DIRECT_NO_ANNOTATION_TEST.uri(), createExchange(boldDog)));
+    }
+
+    @Test
+    @DirtiesContext
+    public void testNoTransactionAnnotation() throws Exception {
+        final Dog boldDog = createDog("Bold", "Terrier");
+        txTemplate.execute(status -> template.send(DIRECT_NO_TX_ANNOTATION_TEST.uri(), createExchange(boldDog)));
+        assertNotNull(findDog(boldDog.getId()));
+    }
 
     @Test
     @DirtiesContext
     public void testRollback() throws Exception {
-        thrown.expect(TransactionSystemException.class);
-        thrown.expectMessage("Could not commit JPA transaction");
+        RollbackThrown.expect(TransactionSystemException.class);
+        RollbackThrown.expectMessage("Could not commit JPA transaction");
         txTemplate.execute(status -> template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null)));
-
-
     }
 
     private Dog findDog(Long id) {
