@@ -23,7 +23,6 @@
 package org.harms.camel.entitymanager;
 
 import javax.interceptor.InterceptorBinding;
-import javax.persistence.EntityManager;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -31,34 +30,11 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.FIELD;
 
 /**
- * Inject the {@link EntityManager} into the annotated field, the field type should
- * be {@link EntityManager} otherwise it will throw an {@link IllegalStateException}.
- * <p>
- * Multiple fields can be annotated with the different {@link org.apache.camel.component.jpa.JpaComponent}
- * specified.
- * </p>
- * <p>
- * If Camel has created a {@link EntityManager} this will be injected in to the field instead.
- * This can be overwritten by adding the field ignoreCamelEntityManager=true and new entity manager
- * will be created instead
- * </p>
- * <pre>
- * {@code
- *
- *@literal @CamelEntityManager(jpaComponent="jpa1")
- * EntityManager em1;
- *
- *@literal @CamelEntityManager(jpaComponent="jpa2", ignoreCamelEntityManager=true)
- * EntityManager em2;
- * }
- * </pre>
+ *  Add to the EntityManagerField if the Camel EntityManager Bean processor should ignore it
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({FIELD})
 @InterceptorBinding
-public @interface CamelEntityManager {
+public @interface IgnoreCamelEntityManager {
 
-    String jpaComponent() default "jpa";
-
-    boolean ignoreCamelEntityManager() default false;
 }

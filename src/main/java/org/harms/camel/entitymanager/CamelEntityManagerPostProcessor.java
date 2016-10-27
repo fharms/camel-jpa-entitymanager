@@ -32,8 +32,8 @@ import javax.persistence.EntityManager;
 
 
 /**
- * Post processor for injecting fields with camel entity manager proxy when
- * annotated with the {@link CamelEntityManager}
+ * Post processor for injecting fields with the camel entity manager proxy when
+ * annotated with {@link javax.persistence.PersistenceContext}
  * <p>
  * The requirement for annotated field is it a type of {@link EntityManager} otherwise it
  * will throw an {@link IllegalStateException}.

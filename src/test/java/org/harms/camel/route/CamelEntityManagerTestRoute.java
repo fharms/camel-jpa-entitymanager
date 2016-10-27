@@ -35,57 +35,66 @@ import org.springframework.stereotype.Component;
 @Component
 class CamelEntityManagerTestRoute extends RouteBuilder {
 
+    @Autowired
+    CamelEntityManagerBean camelEntityManagerBean;
+
     public void configure() throws Exception {
         from(CamelEntityManagerTestRoutes.DIRECT_PERSIST_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_PERSIST_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "persistDog");
+                .bean(camelEntityManagerBean, "persistDog");
 
         from(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "findDog");
+                .bean(camelEntityManagerBean, "findDog");
 
         from(CamelEntityManagerTestRoutes.DIRECT_COMPARE_HASHCODE_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_COMPARE_HASHCODE_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "compareHashCode");
-
-        from(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_PRODUCER_TEST.uri())
-                .routeId(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_PRODUCER_TEST.id())
-                .enrich(CamelEntityManagerTestRoutes.DIRECT_JPA_PRODUCER_TEST.uri())
-                .transacted()
-                .bean(CamelEntityManagerBean.class, "findAnotherDog");
+                .bean(camelEntityManagerBean, "compareHashCode");
 
         from(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_TEST.id())
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
                 .transacted()
-                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPN_CONSUMER_TEST.uri(),0);
+                .bean(camelEntityManagerBean, "findAnotherDog");
+
+        from(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_PRODUCER_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_PRODUCER_TEST.id())
+                .transacted()
+                .to(CamelEntityManagerTestRoutes.DIRECT_JPN_PRODUCER_TEST.uri());
 
         from(CamelEntityManagerTestRoutes.DIRECT_NESTED_BEAN_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_NESTED_BEAN_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "persistWithNedstedCall");
+                .bean(camelEntityManagerBean, "persistWithNedstedCall");
 
         from(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST_WITH_TWO_EM.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST_WITH_TWO_EM.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "findAllDogs");
+                .bean(camelEntityManagerBean, "findAllDogs");
 
         from(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "forceRollback");
+                .bean(camelEntityManagerBean, "forceRollback");
 
         from(CamelEntityManagerTestRoutes.DIRECT_NO_ANNOTATION_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_NO_ANNOTATION_TEST.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "persistWithNoAnnotation");
+                .bean(camelEntityManagerBean, "persistWithNoAnnotation");
+
+        from(CamelEntityManagerTestRoutes.DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.id())
+                .transacted()
+                .bean(camelEntityManagerBean, "persistWithPersistenceContext");
+
 
         from(CamelEntityManagerTestRoutes.DIRECT_WRONG_TYPE.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_WRONG_TYPE.id())
                 .transacted()
-                .bean(CamelEntityManagerBean.class, "persistWithNoAnnotation");
+                .bean(camelEntityManagerBean, "persistWithNoAnnotation");
 
         from(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.id())
