@@ -155,6 +155,15 @@ public class CamelEntityManagerTestRouteTest {
 
     @Test
     @DirtiesContext
+    public void testIgnoreCamelEntity() throws Exception {
+        Dog dog = createDog("Lucy","American Foxhound");
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_IGNORE_CAMEL_EM_TEST.uri(), createExchange(dog)));
+        Dog persistedDog = findDog(result.getIn().getBody(Dog.class).getId());
+        Assert.assertEquals(dog, persistedDog);
+    }
+
+    @Test
+    @DirtiesContext
     public void testInjectPersistenceContext() throws Exception {
         Dog dog = createDog("Bold", "Terrier");
         Exchange result = txTemplate.execute(status -> template.send(DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri(),createExchange(dog)));
@@ -216,7 +225,7 @@ public class CamelEntityManagerTestRouteTest {
     private Dog createDog(String petName, String race) {
         Dog dog = new Dog();
         dog.setPetName(petName);
-        dog.setRace(race);
+        dog.setBreed(race);
         return dog;
     }
 

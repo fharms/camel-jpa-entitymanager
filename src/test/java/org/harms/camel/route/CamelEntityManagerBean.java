@@ -28,6 +28,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.component.jpa.JpaComponent;
 import org.harms.camel.entity.Dog;
 import org.harms.camel.entitymanager.CamelEntityManagerHandler;
+import org.harms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,8 +82,8 @@ public class CamelEntityManagerBean {
            throw new RuntimeException("This is not good!, em.equals(localEm) is not equals");
         }
         Dog dog = new Dog();
-        dog.setPetName("Hans");
-        dog.setRace("Hund");
+        dog.setPetName("Buddy");
+        dog.setBreed("Norwegian Lundehund");
         em.persist(dog);
     }
 
@@ -119,5 +120,14 @@ public class CamelEntityManagerBean {
     public void persistWithPersistenceContext(@Body Dog dog){
         em6.joinTransaction();
         em6.persist(dog);
+    }
+
+    @IgnoreCamelEntityManager
+    public void ignoreCamelEntityManager(Exchange exchange) {
+        EntityManager localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        if (em.equals(localEm)) {
+            throw new RuntimeException("This is not good!, em.equals(localEm) should not be equals");
+        }
+        em.persist(exchange.getIn().getBody(Dog.class));
     }
 }

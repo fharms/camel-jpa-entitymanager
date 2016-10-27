@@ -40,6 +40,7 @@ public enum CamelEntityManagerTestRoutes {
     DIRECT_WRONG_TYPE("direct:wrongType", "wrongType"),
     DIRECT_NO_ANNOTATION_TEST("direct:noAnnotationTest", "noAnnotationTest"),
     DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST("direct:injectPersistenceContext", "injectPersistenceContext"),
+    DIRECT_IGNORE_CAMEL_EM_TEST("direct:ignoreCamelEntityManager", "ignoreCamelEntityManager"),
     DIRECT_NO_TX_ANNOTATION_TEST("direct:noTxTest", "noTxTest");
 
     private final String routeUri;

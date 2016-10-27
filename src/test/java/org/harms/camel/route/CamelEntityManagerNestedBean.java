@@ -46,7 +46,7 @@ public class CamelEntityManagerNestedBean {
 
         Dog dog = new Dog();
         dog.setPetName("Joe");
-        dog.setRace("German Shepherd");
+        dog.setBreed("German Shepherd");
 
         em.persist(dog);
         return dog;

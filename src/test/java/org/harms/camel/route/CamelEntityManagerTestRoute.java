@@ -86,6 +86,11 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
                 .transacted()
                 .bean(camelEntityManagerBean, "persistWithNoAnnotation");
 
+        from(CamelEntityManagerTestRoutes.DIRECT_IGNORE_CAMEL_EM_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.DIRECT_IGNORE_CAMEL_EM_TEST.id())
+                .transacted()
+                .bean(camelEntityManagerBean, "ignoreCamelEntityManager");
+
         from(CamelEntityManagerTestRoutes.DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.id())
                 .transacted()

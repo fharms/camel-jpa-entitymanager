@@ -41,7 +41,10 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Javadoc TBD
+ * Scan for fields type {@link EntityManager} and annotated with {@link PersistenceContext}
+ * and wrap the current entity manager proxy with a new proxy to control the flow. If
+ * Camel has created a EntityManager we by pass the injected and use this in favour, unless
+ * the field or method is annotated with {@link IgnoreCamelEntityManager}
  */
 @Component
 public class CamelEntityManagerHandler {
@@ -80,6 +83,7 @@ public class CamelEntityManagerHandler {
 
     private <T> T createEntityManagerProxy(Class<T> interfaceClass, Object emProxy) {
         InvocationHandler handler = (proxy, method, args) -> {
+
             EntityManager em = entityManagerLocal.get() !=null ? entityManagerLocal.get() : (EntityManager) emProxy;
             switch (method.getName()) {
                 case "hashCode":
@@ -111,7 +115,7 @@ public class CamelEntityManagerHandler {
                     return toString();
             }
 
-            if (entityManagerLocal.get() == null) {
+            if (entityManagerLocal.get() == null && !method.isAnnotationPresent(IgnoreCamelEntityManager.class)) {
                 Arrays.stream(invocation.getArguments())
                         .filter(f -> f instanceof Exchange)
                         .findFirst()
