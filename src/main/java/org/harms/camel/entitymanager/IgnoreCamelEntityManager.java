@@ -28,12 +28,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 
 /**
  *  Add to the EntityManagerField if the Camel EntityManager Bean processor should ignore it
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({FIELD})
+@Target({FIELD, METHOD})
 @InterceptorBinding
 public @interface IgnoreCamelEntityManager {
 

@@ -87,7 +87,7 @@ public class CamelEntityManagerHandler {
                 case "equals":
                     return (em == args[0]);
                 case "toString":
-                    return "Camel EntityManager proxy []";
+                    return "Camel EntityManager proxy ["+em.toString()+"]";
             }
 
             if (!em.isJoinedToTransaction()) {

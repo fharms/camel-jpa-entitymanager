@@ -37,6 +37,8 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
 
+import static org.junit.Assert.assertEquals;
+
 /**
  * Test bean for testing injection of {@link EntityManager}
  */
@@ -103,7 +105,10 @@ public class CamelEntityManagerBean {
         return nBean.persistDog(em);
     }
 
-    public void forceRollback() {
+    public void forceRollback(Exchange exchange) {
+        Dog dog = exchange.getIn().getBody(Dog.class);
+        assertEquals("Skippy",dog.getPetName());
+        assertEquals("Terrier",dog.getRace());
         em.persist(new Object());
     }
 

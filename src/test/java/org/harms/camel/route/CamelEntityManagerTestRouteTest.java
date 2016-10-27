@@ -198,6 +198,8 @@ public class CamelEntityManagerTestRouteTest {
         RollbackThrown.expect(TransactionSystemException.class);
         RollbackThrown.expectMessage("Could not commit JPA transaction");
         template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null));
+        Dog dog = findDog(alphaDoc.getId());
+        assertNotNull(dog);
     }
 
     private Dog findDog(Long id) {
