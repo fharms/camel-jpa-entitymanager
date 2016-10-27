@@ -23,11 +23,11 @@
 package org.harms.camel.route;
 
 import org.harms.camel.entity.Dog;
-import org.harms.camel.entitymanager.CamelEntityManager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 /**
  * Test bean for testing injection of {@link EntityManager}
@@ -36,7 +36,7 @@ import javax.persistence.EntityManager;
 @Transactional(value = "transactionManager")
 public class CamelEntityManagerNestedBean {
 
-    @CamelEntityManager
+    @PersistenceContext(unitName = "emf")
     private EntityManager em;
 
     public Dog persistDog(EntityManager parentEm){
@@ -46,7 +46,7 @@ public class CamelEntityManagerNestedBean {
 
         Dog dog = new Dog();
         dog.setPetName("Joe");
-        dog.setRace("German Shepherd");
+        dog.setBreed("German Shepherd");
 
         em.persist(dog);
         return dog;

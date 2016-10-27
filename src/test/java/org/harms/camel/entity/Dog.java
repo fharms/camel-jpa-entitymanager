@@ -59,7 +59,7 @@ public class Dog {
         return race;
     }
 
-    public void setRace(String race) {
+    public void setBreed(String race) {
         this.race = race;
     }
 

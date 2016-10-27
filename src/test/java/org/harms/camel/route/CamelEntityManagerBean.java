@@ -27,15 +27,18 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.jpa.JpaComponent;
 import org.harms.camel.entity.Dog;
-import org.harms.camel.entitymanager.CamelEntityManager;
 import org.harms.camel.entitymanager.CamelEntityManagerHandler;
+import org.harms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.PersistenceContext;
 import javax.persistence.TypedQuery;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test bean for testing injection of {@link EntityManager}
@@ -44,19 +47,22 @@ import javax.persistence.TypedQuery;
 @Transactional(value = "transactionManager")
 public class CamelEntityManagerBean {
 
-    @CamelEntityManager
+    @PersistenceContext(unitName = "emf")
     private EntityManager em;
 
-    @CamelEntityManager(jpaComponent = "jpa2", ignoreCamelEntityManager = true)
+    @PersistenceContext(unitName = "emf2")
     private EntityManager em2;
 
     private EntityManager em3;
 
-    @CamelEntityManager
+    @PersistenceContext(unitName = "emf")
     private Object em4;
 
-    @CamelEntityManager
+    @PersistenceContext(unitName = "emf")
     private EntityManager em5;
+
+    @PersistenceContext(unitName = "emf")
+    EntityManager em6;
 
     @Autowired
     CamelEntityManagerNestedBean nBean;
@@ -71,10 +77,14 @@ public class CamelEntityManagerBean {
     }
 
     public void findAnotherDog(Exchange exchange) {
-        EntityManager localEm = exchange.getProperty(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        EntityManager localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
         if (!em.equals(localEm)) {
-            throw new RuntimeException("This is not good!");
+           throw new RuntimeException("This is not good!, em.equals(localEm) is not equals");
         }
+        Dog dog = new Dog();
+        dog.setPetName("Buddy");
+        dog.setBreed("Norwegian Lundehund");
+        em.persist(dog);
     }
 
     public void findAllDogs(Exchange exchange) {
@@ -96,11 +106,28 @@ public class CamelEntityManagerBean {
         return nBean.persistDog(em);
     }
 
-    public void forceRollback() {
+    public void forceRollback(Exchange exchange) {
+        Dog dog = exchange.getIn().getBody(Dog.class);
+        assertEquals("Skippy",dog.getPetName());
+        assertEquals("Terrier",dog.getRace());
         em.persist(new Object());
     }
 
     public void persistWithNoAnnotation(@Body Dog dog){
         em3.persist(dog);
+    }
+
+    public void persistWithPersistenceContext(@Body Dog dog){
+        em6.joinTransaction();
+        em6.persist(dog);
+    }
+
+    @IgnoreCamelEntityManager
+    public void ignoreCamelEntityManager(Exchange exchange) {
+        EntityManager localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        if (em.equals(localEm)) {
+            throw new RuntimeException("This is not good!, em.equals(localEm) should not be equals");
+        }
+        em.persist(exchange.getIn().getBody(Dog.class));
     }
 }

@@ -30,6 +30,7 @@ import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
 import org.harms.camel.entity.Dog;
+import org.harms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -71,6 +72,7 @@ public class CamelEntityManagerTestRouteTest {
 
     private TransactionTemplate txTemplate;
 
+    @IgnoreCamelEntityManager
     @PersistenceContext(unitName = "emf")
     private EntityManager em;
 
@@ -98,11 +100,11 @@ public class CamelEntityManagerTestRouteTest {
     public void testEntityManagerInject() throws Exception {
         final Dog dog = createDog("Fiddo", "Beagle");
 
-        txTemplate.execute(status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog)));
+       template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog));
 
         assertEquals(dog, findDog(dog.getId()));
 
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(dog.getId())));
+        Exchange result = template.send(DIRECT_FIND_TEST.uri(), createExchange(dog.getId()));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(dog, dog2);
@@ -111,7 +113,7 @@ public class CamelEntityManagerTestRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerInjectFind() throws Exception {
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId())));
+        Exchange result =  template.send(DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId()));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(alphaDoc, dog2);
@@ -119,19 +121,18 @@ public class CamelEntityManagerTestRouteTest {
 
     @Test
     @DirtiesContext
-    public void testEntityManagerInjectWithJpaProducer() throws Exception {
-        final Dog boldDog = createDog("Bold", "Terrier");
-        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_PRODUCER_TEST.uri(), createExchange(boldDog)));
-        Long id = result.getIn().getBody(Dog.class).getId();
-        Assert.assertEquals(boldDog, findDog(id));
+    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
+        Exchange result = template.send(MANUEL_POLL_JPA_CONSUMER_TEST.uri(), new DefaultExchange(template.getCamelContext()));
+        Assert.assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
     }
 
     @Test
     @DirtiesContext
-    public void testEntityManagerInjectWithJpaConsumer() throws Exception {
-        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_CONSUMER_TEST.uri(), createExchange("")));
-        Dog dog = result.getIn().getBody(Dog.class);
-        Assert.assertEquals(alphaDoc, dog);
+    public void testEntityManagerInjectWithJpaProducer() throws Exception {
+        final Dog boldDog = createDog("Bold", "Terrier");
+        Exchange result = txTemplate.execute(status -> template.send(MANUEL_POLL_JPA_PRODUCER_TEST.uri(), createExchange(boldDog)));
+        Dog dog = findDog(result.getIn().getBody(Dog.class).getId());
+        Assert.assertEquals(boldDog, dog);
     }
 
 
@@ -154,6 +155,24 @@ public class CamelEntityManagerTestRouteTest {
 
     @Test
     @DirtiesContext
+    public void testIgnoreCamelEntity() throws Exception {
+        Dog dog = createDog("Lucy","American Foxhound");
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_IGNORE_CAMEL_EM_TEST.uri(), createExchange(dog)));
+        Dog persistedDog = findDog(result.getIn().getBody(Dog.class).getId());
+        Assert.assertEquals(dog, persistedDog);
+    }
+
+    @Test
+    @DirtiesContext
+    public void testInjectPersistenceContext() throws Exception {
+        Dog dog = createDog("Bold", "Terrier");
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri(),createExchange(dog)));
+        Dog persistedDog = findDog(result.getIn().getBody(Dog.class).getId());
+        assertEquals(dog, persistedDog);
+    }
+
+    @Test
+    @DirtiesContext
     public void testWithTwoEntityManagersQuery() throws Exception {
         final Dog boldDog = createDog("Bold", "Terrier");
         txTemplate.execute(status -> template.send(DIRECT_PERSIST_TEST.uri(), createExchange(boldDog)));
@@ -171,14 +190,14 @@ public class CamelEntityManagerTestRouteTest {
     public void testNoAnnotation() throws Exception {
         RollbackThrown.expect(TransactionSystemException.class);
         final Dog boldDog = createDog("Bold", "Terrier");
-        txTemplate.execute(status -> template.send(DIRECT_NO_ANNOTATION_TEST.uri(), createExchange(boldDog)));
+        template.send(DIRECT_NO_ANNOTATION_TEST.uri(), createExchange(boldDog));
     }
 
     @Test
     @DirtiesContext
     public void testNoTransactionAnnotation() throws Exception {
         final Dog boldDog = createDog("Bold", "Terrier");
-        txTemplate.execute(status -> template.send(DIRECT_NO_TX_ANNOTATION_TEST.uri(), createExchange(boldDog)));
+        template.send(DIRECT_NO_TX_ANNOTATION_TEST.uri(), createExchange(boldDog));
         assertNotNull(findDog(boldDog.getId()));
     }
 
@@ -187,7 +206,9 @@ public class CamelEntityManagerTestRouteTest {
     public void testRollback() throws Exception {
         RollbackThrown.expect(TransactionSystemException.class);
         RollbackThrown.expectMessage("Could not commit JPA transaction");
-        txTemplate.execute(status -> template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null)));
+        template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null));
+        Dog dog = findDog(alphaDoc.getId());
+        assertNotNull(dog);
     }
 
     private Dog findDog(Long id) {
@@ -204,7 +225,7 @@ public class CamelEntityManagerTestRouteTest {
     private Dog createDog(String petName, String race) {
         Dog dog = new Dog();
         dog.setPetName(petName);
-        dog.setRace(race);
+        dog.setBreed(race);
         return dog;
     }
 
