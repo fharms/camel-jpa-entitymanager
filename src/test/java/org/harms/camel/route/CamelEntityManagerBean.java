@@ -128,6 +128,5 @@ public class CamelEntityManagerBean {
         if (em.equals(localEm)) {
             throw new RuntimeException("This is not good!, em.equals(localEm) should not be equals");
         }
-        em.persist(exchange.getIn().getBody(Dog.class));
     }
 }

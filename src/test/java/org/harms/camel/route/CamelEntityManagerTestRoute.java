@@ -77,8 +77,8 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
 
         from(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.id())
-                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
                 .transacted()
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
                 .bean(camelEntityManagerBean, "forceRollback");
 
         from(CamelEntityManagerTestRoutes.DIRECT_NO_ANNOTATION_TEST.uri())
@@ -86,9 +86,10 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
                 .transacted()
                 .bean(camelEntityManagerBean, "persistWithNoAnnotation");
 
-        from(CamelEntityManagerTestRoutes.DIRECT_IGNORE_CAMEL_EM_TEST.uri())
-                .routeId(CamelEntityManagerTestRoutes.DIRECT_IGNORE_CAMEL_EM_TEST.id())
+        from(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST.id())
                 .transacted()
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_IGNORE_CAMEL_EM_TEST.uri(),0)
                 .bean(camelEntityManagerBean, "ignoreCamelEntityManager");
 
         from(CamelEntityManagerTestRoutes.DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri())

@@ -1,17 +1,17 @@
 /**
  * The MIT License
  * Copyright © 2016 Flemming Harms
- *
+ * <p>
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- *
+ * <p>
  * The above copyright notice and this permission notice shall be included in
  * all copies or substantial portions of the Software.
- *
+ * <p>
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -22,6 +22,7 @@
  */
 package org.harms.camel.route;
 
+import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
@@ -39,30 +40,29 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.Commit;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionSystemException;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.TransactionRequiredException;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static org.harms.camel.route.CamelEntityManagerTestRoutes.*;
+import static org.junit.Assert.assertNull;
 
 @RunWith(CamelSpringRunner.class)
 @BootstrapWith(CamelTestContextBootstrapper.class)
 @ContextConfiguration(classes = CamelEntityManagerTestRoute.CamelContextConfiguration.class, loader = CamelSpringDelegatingTestContextLoader.class)
-@Transactional
-@Commit
+@Rollback
 public class CamelEntityManagerTestRouteTest {
 
     private Dog alphaDoc;
@@ -92,7 +92,11 @@ public class CamelEntityManagerTestRouteTest {
 
     @After
     public void cleanup() {
-        em.createQuery("delete from Dog").executeUpdate();
+        txTemplate.execute((TransactionCallback) status -> {
+            em.createQuery("delete from Dog").executeUpdate();
+            return null;
+        });
+        em.close();
     }
 
     @Test
@@ -100,7 +104,7 @@ public class CamelEntityManagerTestRouteTest {
     public void testEntityManagerInject() throws Exception {
         final Dog dog = createDog("Fiddo", "Beagle");
 
-       template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog));
+        template.send(DIRECT_PERSIST_TEST.uri(), createExchange(dog));
 
         assertEquals(dog, findDog(dog.getId()));
 
@@ -113,7 +117,7 @@ public class CamelEntityManagerTestRouteTest {
     @Test
     @DirtiesContext
     public void testEntityManagerInjectFind() throws Exception {
-        Exchange result =  template.send(DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId()));
+        Exchange result = template.send(DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId()));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
         Assert.assertEquals(alphaDoc, dog2);
@@ -156,17 +160,15 @@ public class CamelEntityManagerTestRouteTest {
     @Test
     @DirtiesContext
     public void testIgnoreCamelEntity() throws Exception {
-        Dog dog = createDog("Lucy","American Foxhound");
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_IGNORE_CAMEL_EM_TEST.uri(), createExchange(dog)));
-        Dog persistedDog = findDog(result.getIn().getBody(Dog.class).getId());
-        Assert.assertEquals(dog, persistedDog);
+        Exchange result = template.send(MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST.uri(), new DefaultExchange(template.getCamelContext()));
+        Assert.assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
     }
 
     @Test
     @DirtiesContext
     public void testInjectPersistenceContext() throws Exception {
         Dog dog = createDog("Bold", "Terrier");
-        Exchange result = txTemplate.execute(status -> template.send(DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri(),createExchange(dog)));
+        Exchange result = txTemplate.execute(status -> template.send(DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST.uri(), createExchange(dog)));
         Dog persistedDog = findDog(result.getIn().getBody(Dog.class).getId());
         assertEquals(dog, persistedDog);
     }
@@ -182,31 +184,34 @@ public class CamelEntityManagerTestRouteTest {
         List dogs = result.getIn().getBody(List.class);
         Assert.assertEquals(2, dogs.size());
     }
+
     @Rule
-    public ExpectedException RollbackThrown = ExpectedException.none();
+    public ExpectedException rollbackThrown = ExpectedException.none();
+    public ExpectedException noTransactionThrown = ExpectedException.none();
 
     @Test
     @DirtiesContext
     public void testNoAnnotation() throws Exception {
-        RollbackThrown.expect(TransactionSystemException.class);
+        rollbackThrown.expect(CamelExecutionException.class);
         final Dog boldDog = createDog("Bold", "Terrier");
-        template.send(DIRECT_NO_ANNOTATION_TEST.uri(), createExchange(boldDog));
+        template.sendBody(DIRECT_NO_ANNOTATION_TEST.uri(), boldDog);
     }
 
     @Test
     @DirtiesContext
     public void testNoTransactionAnnotation() throws Exception {
+        noTransactionThrown.expect(TransactionRequiredException.class);
+        noTransactionThrown.expectMessage("No EntityManager with actual transaction available for current thread");
         final Dog boldDog = createDog("Bold", "Terrier");
         template.send(DIRECT_NO_TX_ANNOTATION_TEST.uri(), createExchange(boldDog));
-        assertNotNull(findDog(boldDog.getId()));
+        assertNull(boldDog.getId());
     }
 
     @Test
     @DirtiesContext
     public void testRollback() throws Exception {
-        RollbackThrown.expect(TransactionSystemException.class);
-        RollbackThrown.expectMessage("Could not commit JPA transaction");
-        template.send(DIRECT_ROLLBACK_TEST.uri(), createExchange(null));
+        rollbackThrown.expect(CamelExecutionException.class);
+        template.sendBody(DIRECT_ROLLBACK_TEST.uri(), "");
         Dog dog = findDog(alphaDoc.getId());
         assertNotNull(dog);
     }

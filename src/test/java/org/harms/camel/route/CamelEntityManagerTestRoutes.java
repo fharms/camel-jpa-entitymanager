@@ -28,8 +28,8 @@ package org.harms.camel.route;
 public enum CamelEntityManagerTestRoutes {
 
     DIRECT_PERSIST_TEST("direct:persistTest","directPersistTest"),
-    MANUEL_POLL_JPA_CONSUMER_TEST("direct:manuelPollingTest","manuelPollingTest"),
-    MANUEL_POLL_JPA_PRODUCER_TEST("direct:manuelPollingConsumerTest","manuelPollingConsumerTest"),
+    MANUEL_POLL_JPA_CONSUMER_TEST("direct:manuelPollingCunsumerTest","manuelPollingCunsumerTest"),
+    MANUEL_POLL_JPA_PRODUCER_TEST("direct:manuelPollingProducerTest","manuelPollingProducerTest"),
     DIRECT_JPN_PRODUCER_TEST("jpa:org.harms.camel.entity.Dog","directJpaProducerTest"),
     DIRECT_JPA_CONSUMER_TEST("jpa:org.harms.camel.entity.Dog","directJpaConsumerTest"),
     DIRECT_FIND_TEST("direct:findTest","directFindTest"),
@@ -40,7 +40,8 @@ public enum CamelEntityManagerTestRoutes {
     DIRECT_WRONG_TYPE("direct:wrongType", "wrongType"),
     DIRECT_NO_ANNOTATION_TEST("direct:noAnnotationTest", "noAnnotationTest"),
     DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST("direct:injectPersistenceContext", "injectPersistenceContext"),
-    DIRECT_IGNORE_CAMEL_EM_TEST("direct:ignoreCamelEntityManager", "ignoreCamelEntityManager"),
+    MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST("direct:manuelPollingConsumerIgnoreTest","manuelPollingConsumerIgnoreTest"),
+    DIRECT_IGNORE_CAMEL_EM_TEST("jpa:org.harms.camel.entity.Dog", "ignoreCamelEntityManager"),
     DIRECT_NO_TX_ANNOTATION_TEST("direct:noTxTest", "noTxTest");
 
     private final String routeUri;

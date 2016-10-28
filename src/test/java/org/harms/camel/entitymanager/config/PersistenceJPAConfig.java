@@ -103,7 +103,7 @@ public class PersistenceJPAConfig {
         properties.setProperty("hibernate.archive.autodetection" ,"class");
         properties.setProperty("hibernate.dialect" ,"org.hibernate.dialect.H2Dialect");
         properties.setProperty("hibernate.connection.driver_class" ,"org.h2.Driver");
-        properties.setProperty("hibernate.connection.url" ,"jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=FALSE");
+        properties.setProperty("hibernate.connection.url" ,"jdbc:h2:mem:test;DB_CLOSE_ON_EXIT=TRUE");
         properties.setProperty("hibernate.connection.user" ,"sa");
         properties.setProperty("hibernate.show_sql" ,"false");
         properties.setProperty("hibernate.id.new_generator_mappings", "true");
