@@ -56,6 +56,7 @@ import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
+import static org.hamcrest.core.Is.isA;
 import static org.harms.camel.route.CamelEntityManagerTestRoutes.*;
 import static org.junit.Assert.assertNull;
 
@@ -78,6 +79,11 @@ public class CamelEntityManagerTestRouteTest {
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+
+    @Rule
+    public ExpectedException rollbackThrown = ExpectedException.none();
+    @Rule
+    public ExpectedException noTransactionThrown = ExpectedException.none();
 
     @Before
     public void setupDatabaseData() {
@@ -185,10 +191,6 @@ public class CamelEntityManagerTestRouteTest {
         Assert.assertEquals(2, dogs.size());
     }
 
-    @Rule
-    public ExpectedException rollbackThrown = ExpectedException.none();
-    public ExpectedException noTransactionThrown = ExpectedException.none();
-
     @Test
     @DirtiesContext
     public void testNoAnnotation() throws Exception {
@@ -200,10 +202,10 @@ public class CamelEntityManagerTestRouteTest {
     @Test
     @DirtiesContext
     public void testNoTransactionAnnotation() throws Exception {
-        noTransactionThrown.expect(TransactionRequiredException.class);
-        noTransactionThrown.expectMessage("No EntityManager with actual transaction available for current thread");
+        noTransactionThrown.expect(CamelExecutionException.class);
+        noTransactionThrown.expectCause(isA(TransactionRequiredException.class));
         final Dog boldDog = createDog("Bold", "Terrier");
-        template.send(DIRECT_NO_TX_ANNOTATION_TEST.uri(), createExchange(boldDog));
+        template.sendBody(DIRECT_NO_TX_ANNOTATION_TEST.uri(), boldDog);
         assertNull(boldDog.getId());
     }
 
