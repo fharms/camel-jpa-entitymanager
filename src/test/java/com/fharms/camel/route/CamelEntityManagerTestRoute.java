@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.harms.camel.route;
+package com.fharms.camel.route;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.builder.RouteBuilder;
@@ -111,7 +111,7 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
      * Created by fharms on 24/09/16.
      */
     @Configuration
-    @ComponentScan(value = "org.harms.camel")
+    @ComponentScan(value = "com.fharms")
     public static class CamelContextConfiguration extends CamelConfiguration {
 
         @Autowired

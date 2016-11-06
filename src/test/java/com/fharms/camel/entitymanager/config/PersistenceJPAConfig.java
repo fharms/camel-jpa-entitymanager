@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.harms.camel.entitymanager.config;
+package com.fharms.camel.entitymanager.config;
 
 import org.apache.camel.component.jpa.JpaComponent;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,7 +48,7 @@ public class PersistenceJPAConfig {
     @Bean(name = "emf")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setPackagesToScan("org.harms.camel.jpa.entitymanager");
+        em.setPackagesToScan("com.fharms");
 
         JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
@@ -60,7 +60,7 @@ public class PersistenceJPAConfig {
     @Bean(name = "emf2")
     public LocalContainerEntityManagerFactoryBean entityManagerFactory2() {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
-        em.setPackagesToScan("org.harms.camel.jpa.entitymanager");
+        em.setPackagesToScan("com.fharms");
 
         JpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();
         em.setJpaVendorAdapter(vendorAdapter);
