@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.harms.camel.entitymanager;
+package com.fharms.camel.entitymanager;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.camel.Exchange;
@@ -95,7 +95,7 @@ public class CamelEntityManagerHandler {
             }
 
             if (!em.isJoinedToTransaction()) {
-                em.joinTransaction();
+                    em.joinTransaction();
             }
             return method.invoke(em, args);
         };

@@ -31,12 +31,12 @@ Working with multiple JPA components in camel
 Force the Camel entity manager bean processor to ignore any Entity Manager created by the JPA consumer
 ```java
   
-  @org.harms.camel.entitymanager.IgnoreCamelEntityManager
+  @IgnoreCamelEntityManager
   @javax.persistence.PersistenceContext(unitName = "emf")
   EntityManager em;
   
   
-  @org.harms.camel.entitymanager.IgnoreCamelEntityManager
+  @IgnoreCamelEntityManager
   public void findMyEntity(Exchange exchange) {
      em.find(MyEntity.class, exchange.getIn().getBody(Integer.class))
   }

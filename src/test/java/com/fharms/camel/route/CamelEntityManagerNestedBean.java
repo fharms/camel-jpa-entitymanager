@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.harms.camel.route;
+package com.fharms.camel.route;
 
-import org.harms.camel.entity.Dog;
+import com.fharms.camel.entity.Dog;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

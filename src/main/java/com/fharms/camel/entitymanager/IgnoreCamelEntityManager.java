@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package org.harms.camel.entitymanager;
+package com.fharms.camel.entitymanager;
 
 import javax.interceptor.InterceptorBinding;
 import java.lang.annotation.Retention;
