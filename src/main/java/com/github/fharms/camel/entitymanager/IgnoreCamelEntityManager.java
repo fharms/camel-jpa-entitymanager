@@ -20,37 +20,22 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.route;
+package com.github.fharms.camel.entitymanager;
 
-import com.fharms.camel.entity.Dog;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import javax.interceptor.InterceptorBinding;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 
 /**
- * Test bean for testing injection of {@link EntityManager}
+ *  Add to the EntityManagerField if the Camel EntityManager Bean processor should ignore it
  */
-@Component
-@Transactional(value = "transactionManager")
-public class CamelEntityManagerNestedBean {
-
-    @PersistenceContext(unitName = "emf")
-    private EntityManager em;
-
-    public Dog persistDog(EntityManager parentEm){
-        if (parentEm.hashCode() != em.hashCode()) {
-            throw new RuntimeException("This is not good, hashCode is different!");
-        }
-
-        Dog dog = new Dog();
-        dog.setPetName("Joe");
-        dog.setBreed("German Shepherd");
-
-        em.persist(dog);
-        return dog;
-    }
-
+@Retention(RetentionPolicy.RUNTIME)
+@Target({FIELD, METHOD})
+@InterceptorBinding
+public @interface IgnoreCamelEntityManager {
 
 }

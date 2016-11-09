@@ -20,41 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.entitymanager;
+package com.github.fharms.camel.route;
 
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import com.github.fharms.camel.entity.Dog;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
-
+import javax.persistence.PersistenceContext;
 
 /**
- * Post processor for injecting fields with the camel entity manager proxy when
- * annotated with {@link javax.persistence.PersistenceContext}
- * <p>
- * The requirement for annotated field is it a type of {@link EntityManager} otherwise it
- * will throw an {@link IllegalStateException}.
- * </p>
+ * Test bean for testing injection of {@link EntityManager}
  */
 @Component
-@EnableAspectJAutoProxy(proxyTargetClass = true)
-public class CamelEntityManagerPostProcessor implements BeanPostProcessor {
+@Transactional(value = "transactionManager")
+public class CamelEntityManagerNestedBean {
 
-    @Autowired
-    private CamelEntityManagerHandler handler;
+    @PersistenceContext(unitName = "emf")
+    private EntityManager em;
 
+    public Dog persistDog(EntityManager parentEm){
+        if (parentEm.hashCode() != em.hashCode()) {
+            throw new RuntimeException("This is not good, hashCode is different!");
+        }
 
-    @Override
-    public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-        return handler.registerProxyHandler(bean);
+        Dog dog = new Dog();
+        dog.setPetName("Joe");
+        dog.setBreed("German Shepherd");
+
+        em.persist(dog);
+        return dog;
     }
 
-    @Override
-    public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-        return bean;
-    }
 
 }
