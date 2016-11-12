@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.entitymanager;
+package com.github.fharms.camel.entitymanager;
 
 import org.aopalliance.intercept.MethodInterceptor;
 import org.apache.camel.Exchange;

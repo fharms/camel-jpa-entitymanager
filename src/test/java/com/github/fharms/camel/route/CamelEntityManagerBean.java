@@ -20,15 +20,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.route;
+package com.github.fharms.camel.route;
 
+import com.github.fharms.camel.entity.Dog;
+import com.github.fharms.camel.entitymanager.CamelEntityManagerHandler;
+import com.github.fharms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.apache.camel.Body;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.component.jpa.JpaComponent;
-import com.fharms.camel.entity.Dog;
-import com.fharms.camel.entitymanager.CamelEntityManagerHandler;
-import com.fharms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

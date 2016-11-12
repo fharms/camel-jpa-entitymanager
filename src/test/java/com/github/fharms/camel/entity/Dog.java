@@ -20,7 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.entity;
+package com.github.fharms.camel.entity;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,7 +30,7 @@ import javax.persistence.Table;
 import java.util.Objects;
 
 /**
- * Created by fharms on 25/09/16.
+ * Test Entity
  */
 @Entity
 @Table(name = "DOG")

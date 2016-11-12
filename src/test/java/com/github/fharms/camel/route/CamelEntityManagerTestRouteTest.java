@@ -20,9 +20,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.route;
+package com.github.fharms.camel.route;
 
-import com.fharms.camel.entity.Dog;
+import com.github.fharms.camel.entity.Dog;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -31,7 +31,7 @@ import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
-import com.fharms.camel.entitymanager.IgnoreCamelEntityManager;
+import com.github.fharms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;

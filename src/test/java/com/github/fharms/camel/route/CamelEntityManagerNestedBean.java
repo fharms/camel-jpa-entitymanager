@@ -20,22 +20,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.fharms.camel.entitymanager;
+package com.github.fharms.camel.route;
 
-import javax.interceptor.InterceptorBinding;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import com.github.fharms.camel.entity.Dog;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 
 /**
- *  Add to the EntityManagerField if the Camel EntityManager Bean processor should ignore it
+ * Test bean for testing injection of {@link EntityManager}
  */
-@Retention(RetentionPolicy.RUNTIME)
-@Target({FIELD, METHOD})
-@InterceptorBinding
-public @interface IgnoreCamelEntityManager {
+@Component
+@Transactional(value = "transactionManager")
+public class CamelEntityManagerNestedBean {
+
+    @PersistenceContext(unitName = "emf")
+    private EntityManager em;
+
+    public Dog persistDog(EntityManager parentEm){
+        if (parentEm.hashCode() != em.hashCode()) {
+            throw new RuntimeException("This is not good, hashCode is different!");
+        }
+
+        Dog dog = new Dog();
+        dog.setPetName("Joe");
+        dog.setBreed("German Shepherd");
+
+        em.persist(dog);
+        return dog;
+    }
+
 
 }
