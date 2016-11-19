@@ -5,11 +5,20 @@ by simply using the URI format "jpa:entityClassName[?options]". This make it rea
 But accessing Camels entity manager and join it with with current route transaction is a little more tricky, and require 
 some manual work.
 
-The CamelEntityManager is a post processor that serves the purpose, to inject a proxy around the EntityManager 
+The Camel Entity Manager is a post processor that serves the purpose, to inject a proxy around the EntityManager 
 and handle the logic around the injected entity manager. It support both use cases where the Camel has created 
 the EntityManager as part of the JPA consumer or producer, or for none JPA consumers or producers.
 
 # User guide
+
+For using the Camel Entity Manager post processor add this dependency to your project
+```xml
+ <dependency>
+      <artifactId>camel.jpa.entitymanager</artifactId>
+      <groupId>com.github.fharms</groupId>
+      <version>0.0.2</version>
+ </dependency>
+```
 
 Annotate the field with @PersistenceContext and type EntityManager as you normal with do.
 
