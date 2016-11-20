@@ -24,6 +24,7 @@ package com.github.fharms.camel.route;
 
 import com.github.fharms.camel.entity.Dog;
 import org.apache.camel.Body;
+import org.apache.camel.Exchange;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
@@ -40,6 +41,10 @@ public class BeanWithNoAnnotation {
 
     public void noTxAnnotation(@Body Dog dog){
         em.persist(dog);
+    }
+
+    public void noTxAnnotationWithExchange(Exchange exchange) {
+        em.persist(exchange.getIn().getBody(Dog.class));
     }
 
 

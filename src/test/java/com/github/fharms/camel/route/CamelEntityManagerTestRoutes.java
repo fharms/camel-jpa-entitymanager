@@ -42,8 +42,9 @@ public enum CamelEntityManagerTestRoutes {
     DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST("direct:injectPersistenceContext", "injectPersistenceContext"),
     MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST("direct:manuelPollingConsumerIgnoreTest","manuelPollingConsumerIgnoreTest"),
     DIRECT_IGNORE_CAMEL_EM_TEST("jpa:com.github.fharms.camel.entity.Dog", "ignoreCamelEntityManager"),
-    DIRECT_NO_TX_ANNOTATION_TEST("direct:noTxTest", "noTxTest");
-
+    DIRECT_NO_TX_ANNOTATION_TEST("direct:noTxTest", "noTxTest"),
+    MANUEL_POLL_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST("direct:noTxExchangePollingConsumerTest", "noTxExchangePollingConsumerTest"),
+    DIRECT_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST("jpa:com.github.fharms.camel.entity.Dog","directJpaConsumerNoTx");
     private final String routeUri;
     private final String routeId;
 

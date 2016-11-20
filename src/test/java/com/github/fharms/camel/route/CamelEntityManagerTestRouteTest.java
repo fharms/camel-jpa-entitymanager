@@ -23,6 +23,8 @@
 package com.github.fharms.camel.route;
 
 import com.github.fharms.camel.entity.Dog;
+import com.github.fharms.camel.entitymanager.CamelEntityManagerHandler;
+import com.github.fharms.camel.entitymanager.IgnoreCamelEntityManager;
 import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
@@ -31,15 +33,16 @@ import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringRunner;
 import org.apache.camel.test.spring.CamelTestContextBootstrapper;
-import com.github.fharms.camel.entitymanager.IgnoreCamelEntityManager;
+import org.hamcrest.Description;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.BootstrapWith;
@@ -52,6 +55,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TransactionRequiredException;
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static junit.framework.TestCase.assertEquals;
@@ -78,6 +82,9 @@ public class CamelEntityManagerTestRouteTest {
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+
+    @Autowired
+    protected ApplicationContext applicationContext;
 
     @Rule
     public ExpectedException rollbackThrown = ExpectedException.none();
@@ -116,7 +123,7 @@ public class CamelEntityManagerTestRouteTest {
         Exchange result = template.send(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST.uri(), createExchange(dog.getId()));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
-        Assert.assertEquals(dog, dog2);
+        assertEquals(dog, dog2);
     }
 
     @Test
@@ -125,14 +132,15 @@ public class CamelEntityManagerTestRouteTest {
         Exchange result = template.send(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST.uri(), createExchange(alphaDoc.getId()));
 
         Dog dog2 = result.getIn().getBody(Dog.class);
-        Assert.assertEquals(alphaDoc, dog2);
+        assertEquals(alphaDoc, dog2);
     }
 
     @Test
     @DirtiesContext
     public void testEntityManagerInjectWithJpaConsumer() throws Exception {
         Exchange result = template.send(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_TEST.uri(), new DefaultExchange(template.getCamelContext()));
-        Assert.assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
+        assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
+        assertNull(getCamelEntityManagerThreadLocal());
     }
 
     @Test
@@ -141,7 +149,7 @@ public class CamelEntityManagerTestRouteTest {
         final Dog boldDog = createDog("Bold", "Terrier");
         Exchange result = txTemplate.execute(status -> template.send(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_PRODUCER_TEST.uri(), createExchange(boldDog)));
         Dog dog = findDog(result.getIn().getBody(Dog.class).getId());
-        Assert.assertEquals(boldDog, dog);
+        assertEquals(boldDog, dog);
     }
 
 
@@ -166,7 +174,7 @@ public class CamelEntityManagerTestRouteTest {
     @DirtiesContext
     public void testIgnoreCamelEntity() throws Exception {
         Exchange result = template.send(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_CONSUMER_IGNORE_TEST.uri(), new DefaultExchange(template.getCamelContext()));
-        Assert.assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
+        assertEquals(alphaDoc, result.getIn().getBody(Dog.class));
     }
 
     @Test
@@ -187,7 +195,7 @@ public class CamelEntityManagerTestRouteTest {
         assertNotNull(findDog(boldDog.getId()));
         Exchange result = txTemplate.execute(status -> template.send(CamelEntityManagerTestRoutes.DIRECT_FIND_TEST_WITH_TWO_EM.uri(), createExchange(null)));
         List dogs = result.getIn().getBody(List.class);
-        Assert.assertEquals(2, dogs.size());
+        assertEquals(2, dogs.size());
     }
 
     @Test
@@ -210,11 +218,28 @@ public class CamelEntityManagerTestRouteTest {
 
     @Test
     @DirtiesContext
+    public void testNoTransactionAnnotationWithExchange() throws Exception {
+        Exception saveException = null;
+        noTransactionThrown.expect(CamelExecutionException.class);
+        noTransactionThrown.expectCause(new CauseByMatcher(IllegalStateException.class, "Transaction synchronization is not active"));
+        try {
+            template.sendBody(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST.uri(), new DefaultExchange(template.getCamelContext()));
+        } catch (Exception e) {
+            saveException = e;
+        }
+        assertNull(getCamelEntityManagerThreadLocal());
+        throw saveException;
+
+    }
+
+    @Test
+    @DirtiesContext
     public void testRollback() throws Exception {
         rollbackThrown.expect(CamelExecutionException.class);
         template.sendBody(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri(), "");
         Dog dog = findDog(alphaDoc.getId());
         assertNotNull(dog);
+        assertNull(getCamelEntityManagerThreadLocal());
     }
 
     private Dog findDog(Long id) {
@@ -235,5 +260,37 @@ public class CamelEntityManagerTestRouteTest {
         return dog;
     }
 
+    private Object getCamelEntityManagerThreadLocal() throws IllegalAccessException, NoSuchFieldException {
+        CamelEntityManagerHandler handler = applicationContext.getBean(CamelEntityManagerHandler.class);
+        Field entityManagerLocalField = handler.getClass().getDeclaredField("entityManagerLocal");
+        entityManagerLocalField.setAccessible(true);
+        ThreadLocal tl = (ThreadLocal) entityManagerLocalField.get(handler);
+        return tl.get();
+    }
 
+    private static class CauseByMatcher extends TypeSafeMatcher<Throwable> {
+
+        private final Class<? extends Throwable> clazz;
+        private final String expectedMessage;
+
+        public CauseByMatcher(Class<? extends Throwable> clazz, String expectedMessage) {
+            this.clazz = clazz;
+            this.expectedMessage = expectedMessage;
+        }
+
+        @Override
+        protected boolean matchesSafely(Throwable item) {
+            return item.getClass().isAssignableFrom(clazz)
+                    && item.getMessage().contains(expectedMessage);
+        }
+
+        @Override
+        public void describeTo(Description description) {
+            description.appendText("expects class [")
+                    .appendValue(clazz)
+                    .appendText(" ] and a message [")
+                    .appendValue(expectedMessage)
+                    .appendText(" ]");
+        }
+    }
 }

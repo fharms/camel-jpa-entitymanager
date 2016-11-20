@@ -105,6 +105,11 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
         from(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.id())
                 .bean(BeanWithNoAnnotation.class, "noTxAnnotation");
+
+        from(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.MANUEL_POLL_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST.id())
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_NO_TX_ANNOTATION_WITH_EXCHANGE_TEST.uri(),0)
+                .bean(BeanWithNoAnnotation.class, "noTxAnnotationWithExchange");
     }
 
     /**
