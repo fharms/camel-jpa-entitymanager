@@ -29,6 +29,7 @@ import org.apache.camel.CamelExecutionException;
 import org.apache.camel.Exchange;
 import org.apache.camel.Produce;
 import org.apache.camel.ProducerTemplate;
+import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.impl.DefaultExchange;
 import org.apache.camel.test.spring.CamelSpringDelegatingTestContextLoader;
 import org.apache.camel.test.spring.CamelSpringRunner;
@@ -257,7 +258,7 @@ public class CamelEntityManagerTestRouteTest {
     @DirtiesContext
     public void testRollbackFromRoute() throws Exception {
         rollbackThrown.expect(CamelExecutionException.class);
-       // noTransactionThrown.expectCause(new CauseByMatcher(IllegalStateException.class, "Rollback from inside the route"));
+        rollbackThrown.expectCause(new CauseByMatcher(RuntimeCamelException.class, "Rollback from inside the route"));
 
         Exception saveException = null;
         try {
