@@ -44,7 +44,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.annotation.DirtiesContext;
-import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.BootstrapWith;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -55,6 +54,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.TransactionRequiredException;
+import javax.persistence.TypedQuery;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -66,7 +66,6 @@ import static org.junit.Assert.assertNull;
 @RunWith(CamelSpringRunner.class)
 @BootstrapWith(CamelTestContextBootstrapper.class)
 @ContextConfiguration(classes = CamelEntityManagerTestRoute.CamelContextConfiguration.class, loader = CamelSpringDelegatingTestContextLoader.class)
-@Rollback
 public class CamelEntityManagerTestRouteTest {
 
     private Dog alphaDoc;
@@ -212,8 +211,14 @@ public class CamelEntityManagerTestRouteTest {
         noTransactionThrown.expect(CamelExecutionException.class);
         noTransactionThrown.expectCause(isA(TransactionRequiredException.class));
         final Dog boldDog = createDog("Bold", "Terrier");
-        template.sendBody(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.uri(), boldDog);
+        Exception saveException = null;
+        try {
+            template.sendBody(CamelEntityManagerTestRoutes.DIRECT_NO_TX_ANNOTATION_TEST.uri(), boldDog);
+        } catch (Exception e) {
+            saveException = e;
+        }
         assertNull(boldDog.getId());
+        throw saveException;
     }
 
     @Test
@@ -236,14 +241,61 @@ public class CamelEntityManagerTestRouteTest {
     @DirtiesContext
     public void testRollback() throws Exception {
         rollbackThrown.expect(CamelExecutionException.class);
-        template.sendBody(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri(), "");
+        Exception saveException = null;
+        try {
+            template.sendBody(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri(), "");
+        } catch (Exception e) {
+            saveException = e;
+        }
         Dog dog = findDog(alphaDoc.getId());
         assertNotNull(dog);
+        assertNull(getCamelEntityManagerThreadLocal());
+        throw saveException;
+    }
+
+    @Test
+    @DirtiesContext
+    public void testRollbackFromRoute() throws Exception {
+        rollbackThrown.expect(CamelExecutionException.class);
+       // noTransactionThrown.expectCause(new CauseByMatcher(IllegalStateException.class, "Rollback from inside the route"));
+
+        Exception saveException = null;
+        try {
+            template.sendBody(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_ROUTE_TEST.uri(), "");
+        } catch (Exception e) {
+            saveException = e;
+        }
+        Dog dog = findDog(alphaDoc.getId());
+        assertNotNull(dog);
+        assertNull(findDogByPetName("Buddy"));
+        assertNull(getCamelEntityManagerThreadLocal());
+        throw saveException;
+    }
+
+    @Test
+    @DirtiesContext
+    public void testStartTxFromRouteWithNoAnnotationRoute() throws Exception {
+        template.sendBody(CamelEntityManagerTestRoutes.DIRECT_START_TX_FROM_ROUTE_TEST.uri(), "");
+        Dog dog = findDog(alphaDoc.getId());
+        assertNull(dog);
+        assertNotNull(findDogByPetName("Roxy"));
         assertNull(getCamelEntityManagerThreadLocal());
     }
 
     private Dog findDog(Long id) {
         return em.find(Dog.class, id);
+    }
+
+    private Dog findDogByPetName(String petname) {
+        TypedQuery<Dog> typedQuery = em.createQuery("select d from Dog d where d.petName = :petname",Dog.class);
+        typedQuery.setParameter("petname",petname);
+        Dog result = null;
+        try {
+            result = typedQuery.getSingleResult();
+        } catch (Exception e) {
+            result = null;
+        }
+        return result;
     }
 
 

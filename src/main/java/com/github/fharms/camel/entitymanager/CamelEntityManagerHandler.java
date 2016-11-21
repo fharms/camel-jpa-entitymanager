@@ -95,7 +95,7 @@ public class CamelEntityManagerHandler {
             }
 
             if (!em.isJoinedToTransaction()) {
-                    em.joinTransaction();
+                em.joinTransaction();
             }
             return method.invoke(em, args);
         };
