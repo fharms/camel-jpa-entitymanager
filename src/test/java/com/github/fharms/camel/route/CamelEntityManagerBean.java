@@ -113,6 +113,13 @@ public class CamelEntityManagerBean {
         em.persist(new Object());
     }
 
+    public void forceRollbackFromRoute(Exchange exchange) {
+        Dog dog = new Dog();
+        dog.setPetName("Buddy");
+        dog.setBreed("Norwegian Lundehund");
+        em.persist(dog);
+    }
+
     public void persistWithNoAnnotation(@Body Dog dog){
         em3.persist(dog);
     }

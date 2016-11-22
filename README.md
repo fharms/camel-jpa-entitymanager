@@ -9,6 +9,14 @@ The Camel Entity Manager is a post processor that serves the purpose, to inject 
 and handle the logic around the injected entity manager. It support both use cases where the Camel has created 
 the EntityManager as part of the JPA consumer or producer, or for none JPA consumers or producers.
 
+# Requirements for running using Camel Entity Manager Bean Processor 
+
+* Maven 3.x or higher
+* JDK 8 or higher
+
+    >Disclaimer : Only tested with Spring and Hibernate 5.0.1 
+
+
 # User guide
 
 For using the Camel Entity Manager post processor add this dependency to your project

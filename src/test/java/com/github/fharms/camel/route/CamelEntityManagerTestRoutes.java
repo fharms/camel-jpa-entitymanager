@@ -37,6 +37,8 @@ public enum CamelEntityManagerTestRoutes {
     DIRECT_COMPARE_HASHCODE_TEST("direct:compareHashCodeTest", "compareHashCodeTest"),
     DIRECT_NESTED_BEAN_TEST("direct:nestedBeanTest", "nestedBeanTest"),
     DIRECT_ROLLBACK_TEST("direct:rollbackTest", "rollbackTest"),
+    DIRECT_ROLLBACK_ROUTE_TEST("direct:rollbackRouteTest", "rollbackRouteTest"),
+    DIRECT_START_TX_FROM_ROUTE_TEST("direct:startTxFromRoute", "startTxFromRoute"),
     DIRECT_WRONG_TYPE("direct:wrongType", "wrongType"),
     DIRECT_NO_ANNOTATION_TEST("direct:noAnnotationTest", "noAnnotationTest"),
     DIRECT_INJECT_PERSISTENCE_CONTEXT_TEST("direct:injectPersistenceContext", "injectPersistenceContext"),

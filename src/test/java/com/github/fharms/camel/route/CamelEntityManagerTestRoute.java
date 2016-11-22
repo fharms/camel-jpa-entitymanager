@@ -77,9 +77,22 @@ class CamelEntityManagerTestRoute extends RouteBuilder {
 
         from(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_TEST.id())
-                .transacted()
                 .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
+                .transacted()
                 .bean(camelEntityManagerBean, "forceRollback");
+
+        from(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_ROUTE_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.DIRECT_ROLLBACK_ROUTE_TEST.id())
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
+                .transacted()
+                .bean(camelEntityManagerBean, "forceRollbackFromRoute")
+                .process(exchange -> {throw new IllegalStateException("Rollback from inside the route");});
+
+        from(CamelEntityManagerTestRoutes.DIRECT_START_TX_FROM_ROUTE_TEST.uri())
+                .routeId(CamelEntityManagerTestRoutes.DIRECT_START_TX_FROM_ROUTE_TEST.id())
+                .pollEnrich(CamelEntityManagerTestRoutes.DIRECT_JPA_CONSUMER_TEST.uri(),0)
+                .transacted()
+                .bean(BeanWithNoAnnotation.class, "startTxFromRouteAndJoin");
 
         from(CamelEntityManagerTestRoutes.DIRECT_NO_ANNOTATION_TEST.uri())
                 .routeId(CamelEntityManagerTestRoutes.DIRECT_NO_ANNOTATION_TEST.id())

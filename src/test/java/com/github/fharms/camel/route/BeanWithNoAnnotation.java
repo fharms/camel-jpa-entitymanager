@@ -23,9 +23,9 @@
 package com.github.fharms.camel.route;
 
 import com.github.fharms.camel.entity.Dog;
+import com.github.fharms.camel.entitymanager.CamelEntityManagerHandler;
 import org.apache.camel.Body;
 import org.apache.camel.Exchange;
-import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -33,7 +33,6 @@ import javax.persistence.PersistenceContext;
 /**
  * Use for test purpose
  */
-@Component
 public class BeanWithNoAnnotation {
 
     @PersistenceContext(unitName = "emf")
@@ -45,6 +44,19 @@ public class BeanWithNoAnnotation {
 
     public void noTxAnnotationWithExchange(Exchange exchange) {
         em.persist(exchange.getIn().getBody(Dog.class));
+    }
+
+    public void startTxFromRouteAndJoin(Exchange exchange) {
+        EntityManager localEm = exchange.getIn().getHeader(CamelEntityManagerHandler.CAMEL_ENTITY_MANAGER, EntityManager.class);
+        if (!em.equals(localEm)) {
+            throw new RuntimeException("This is not good!, em.equals(localEm) should be equals");
+        }
+        Dog alphaDog = exchange.getIn().getBody(Dog.class);
+        em.remove(em.merge(alphaDog));
+        Dog dog = new Dog();
+        dog.setPetName("Roxy");
+        dog.setBreed("Afghan Hound");
+        em.persist(dog);
     }
 
 
